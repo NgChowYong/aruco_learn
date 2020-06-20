@@ -1,0 +1,16 @@
+<launch>
+
+<include file="$(find realsense2_camera)/launch/my_camera_with_model.launch" />
+<include file="$(find aruco_ros)/launch/my_marker_publisher.launch" />
+
+
+<param name="initial_camera_x"    value="0.0"/>
+  <param name="initial_camera_y"    value="0.0"/>
+  <param name="initial_camera_z"    value="1.0"/>
+  <param name="initial_camera_rx"   value="0.0"/>
+  <param name="initial_camera_ry"   value="0.0"/>
+  <param name="initial_camera_rz"   value="0.0"/>
+<!--node pkg="localization_node" type="localization_node_node" name="map" output="screen" /-->
+
+</launch>
+
