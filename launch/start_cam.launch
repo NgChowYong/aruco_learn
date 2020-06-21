@@ -1,7 +1,7 @@
 <launch>
 
-<include file="$(find realsense2_camera)/launch/my_camera_with_model.launch" />
-<include file="$(find aruco_ros)/launch/my_marker_publisher.launch" />
+<include file="$(find localization_node)/launch/cam_with_model.launch" />
+<include file="$(find localization_node)/launch/aruco_detect.launch" />
 
 
 <param name="initial_camera_x"    value="0.0"/>
