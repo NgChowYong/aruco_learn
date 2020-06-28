@@ -7,9 +7,11 @@
 #include <fstream>
 #include <stdio.h>
 #include <string>
+
 tf::StampedTransform cam2base;
 fiducial_msgs::FiducialTransformArray aruco_;
 std::string origin = "10";
+std::string robot = "40";
 
 void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
 {
@@ -17,14 +19,23 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
   aruco_ = *msg;
 
   int found_flag = 0;
+  int found_robot_flag = 0;
   std::string output = "--";
-
+  std::string robot_output = "";
+  std::string temp;
   for(int i = 0;i < aruco_.transforms.size();i++){
 
-    output = output + std::to_string(static_cast<int>(aruco_.transforms[i].transform.translation.x*1000)) + ",";
-    output = output + std::to_string(static_cast<int>(aruco_.transforms[i].transform.translation.y*1000))+",";
-    output = output + std::to_string(static_cast<int>(aruco_.transforms[i].transform.translation.z*1000))+"/";
-
+    if(aruco_.transforms[i].fiducial_id == std::stoi(robot)){
+        found_robot_flag = 1;
+        robot_output = std::to_string(static_cast<int>(aruco_.transforms[i].transform.translation.x*1000)) + ",";
+        robot_output += std::to_string(static_cast<int>(aruco_.transforms[i].transform.translation.y*1000)) + ",";
+        robot_output += std::to_string(static_cast<int>(aruco_.transforms[i].transform.translation.z*1000)) + "/";
+    }else{
+        found_robot_flag = 0;
+        output = output + std::to_string(static_cast<int>(aruco_.transforms[i].transform.translation.x*1000)) + ",";
+        output = output + std::to_string(static_cast<int>(aruco_.transforms[i].transform.translation.y*1000))+",";
+        output = output + std::to_string(static_cast<int>(aruco_.transforms[i].transform.translation.z*1000))+"/";
+    }
     //std::cout <<"\noutput:"<< output;
 
     if(aruco_.transforms[i].fiducial_id == std::stoi(origin)){
@@ -40,8 +51,29 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
       found_flag = 1;
       ROS_INFO("found origin !");
     }
-  }
+/*
+    if(aruco_.transforms[i].fiducial_id == std::stoi(robot)){
+      tf::TransformBroadcaster br;
+      tf::Transform cam2pos;
+      cam2pos.setOrigin(  tf::Vector3(aruco_.transforms[i].transform.translation.x,aruco_.transforms[i].transform.translation.y,aruco_.transforms[i].transform.translation.z));
+    cam2pos.setRotation( tf::Quaternion(aruco_.transforms[i].transform.rotation.x,aruco_.transforms[i].transform.rotation.y,aruco_.transforms[i].transform.rotation.z ,aruco_.transforms[i].transform.rotation.w));
 
+      tf::Transform pos2base;
+      pos2base = cam2pos.inverse() * cam2base;
+      br.sendTransform(tf::StampedTransform(pos2base, ros::Time::now(), "map","robot"));
+
+      found_flag = 1;
+      ROS_INFO("found origin !");
+    }
+*/
+  }
+  if (found_robot_flag == 1){
+    temp = "";
+    temp.append(output,0,2);
+    temp.append(robot_output);
+    temp.append(output.begin()+2,output.end());
+    output = temp;
+  }
   if (found_flag == 0){
       tf::TransformBroadcaster br;
       tf::Transform original;
@@ -52,7 +84,7 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
   //output[output.size()-1] = '\0';
   output = output.substr(0,output.size()-1);
   output = output + "--";
-  //std::cout <<output <<"\n";
+  std::cout <<output <<"\n";
   std::ofstream fp("obstacle.txt");
   fp << output;
   fp.close();
@@ -73,6 +105,13 @@ int main(int argc, char **argv)
   }else{
     origin = "10";
   }
+  
+  if(n.hasParam("robot_id")) {
+    n.getParam("robot_id",robot);
+  }else{
+    robot = "40";
+  }
+
   ros::spin();
 
   return 0;
