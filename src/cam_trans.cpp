@@ -4,10 +4,12 @@
 #include <tf/transform_broadcaster.h> // publish pose to tf
 #include <tf/transform_listener.h> // listen pose to tf
 #include <iostream>
-
+#include <fstream>
+#include <stdio.h>
+#include <string>
 tf::StampedTransform cam2base;
 fiducial_msgs::FiducialTransformArray aruco_;
-std::string origin;
+std::string origin = "10";
 
 void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
 {
@@ -15,10 +17,16 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
   aruco_ = *msg;
 
   int found_flag = 0;
+  std::string output = "--";
 
   for(int i = 0;i < aruco_.transforms.size();i++){
-    
-    
+
+    output = output + std::to_string(static_cast<int>(aruco_.transforms[i].transform.translation.x*1000)) + ",";
+    output = output + std::to_string(static_cast<int>(aruco_.transforms[i].transform.translation.y*1000))+",";
+    output = output + std::to_string(static_cast<int>(aruco_.transforms[i].transform.translation.z*1000))+"/";
+
+    //std::cout <<"\noutput:"<< output;
+
     if(aruco_.transforms[i].fiducial_id == std::stoi(origin)){
       tf::TransformBroadcaster br;
       tf::Transform cam2pos;
@@ -41,7 +49,13 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
       original.setRotation( tf::Quaternion(0,0,0,1));
       br.sendTransform(tf::StampedTransform(original, ros::Time::now(), "map","base_link"));
   }
-
+  //output[output.size()-1] = '\0';
+  output = output.substr(0,output.size()-1);
+  output = output + "--";
+  //std::cout <<output <<"\n";
+  std::ofstream fp("obstacle.txt");
+  fp << output;
+  fp.close();
 }
 
 int main(int argc, char **argv)

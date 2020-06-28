@@ -1,5 +1,0 @@
-<launch>
-
-	<node pkg="localization_node" type="localization_node_node" name="map" />
-
-</launch>

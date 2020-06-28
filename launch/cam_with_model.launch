@@ -50,7 +50,7 @@
   <arg name="allow_no_texture_points"   default="false"/>
 
   <group ns="$(arg camera)">
-    <include file="$(find localization_node)/launch/nodelet.launch.xml">
+    <include file="$(find localization)/launch/nodelet.launch.xml">
       <arg name="tf_prefix"                value="$(arg tf_prefix)"/>
       <arg name="external_manager"         value="$(arg external_manager)"/>
       <arg name="manager"                  value="$(arg manager)"/>
@@ -105,5 +105,5 @@
   <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find realsense2_description)/urdf/test_d435_camera.urdf.xacro' use_nominal_extrinsics:=false"/>
 
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher"/>
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find localization_node)/launch/urdf.rviz" required="true"/>
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find localization)/launch/urdf.rviz" required="true"/>
 </launch>
