@@ -13,6 +13,27 @@ fiducial_msgs::FiducialTransformArray aruco_;
 std::string origin = "10";
 std::string robot = "40";
 
+//#define POINT_MODE
+#define NODE_MODE
+
+std::string float_to_string(float f,std::string n){ 
+  // float to mm then to string
+  return std::to_string(static_cast<int>(f*1000)) + n;
+}
+
+std::string float_to_node_string(float fx, float fy, std::string n){
+  // float to cm then to node
+  // n11 n12 n13 n14 n15 y3
+  // n6  n7  n8  n9  n10 y2
+  // n1  n2  n3  n4  n5  y1
+  // x1  x2  x3  x4  x5
+  // for case above node = 5y + x
+  // for x 11 = 2y + 1x = 10 + 1 = 11
+  int fxx = static_cast<int>(fx * 100 / 40);
+  int fyy = static_cast<int>(fy * 100 / 40);
+  return std::to_string(fyy*10 + fxx) + n;
+}
+
 void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
 {
   //ROS_INFO("I hear marker");
@@ -20,21 +41,38 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
 
   int found_flag = 0;
   int found_robot_flag = 0;
+#ifdef POINT_MODE
   std::string output = "--";
+#endif
+#ifdef NODE_MODE
+  std::string output = "[";
+#endif
   std::string robot_output = "";
   std::string temp;
   for(int i = 0;i < aruco_.transforms.size();i++){
 
     if(aruco_.transforms[i].fiducial_id == std::stoi(robot)){
         found_robot_flag = 1;
-        robot_output = std::to_string(static_cast<int>(aruco_.transforms[i].transform.translation.x*1000)) + ",";
-        robot_output += std::to_string(static_cast<int>(aruco_.transforms[i].transform.translation.y*1000)) + ",";
-        robot_output += std::to_string(static_cast<int>(aruco_.transforms[i].transform.translation.z*1000)) + "/";
+        #ifdef POINT_MODE
+            robot_output = flaot_to_string(aruco_.transforms[i].transform.translation.x, ",");
+            robot_output += flaot_to_string(aruco_.transforms[i].transform.translation.y, ",");
+            robot_output += flaot_to_string(aruco_.transforms[i].transform.translation.z, "/");
+        #endif
+        #ifdef NODE_MODE
+            robot_output = flaot_to_node_string(aruco_.transforms[i].transform.translation.x, aruco_.transforms[i].transform.translation.y, ",");
+            //robot_output += flaot_to_node_string(aruco_.transforms[i].transform.translation.z, ",");
+        #endif
     }else{
         found_robot_flag = 0;
-        output = output + std::to_string(static_cast<int>(aruco_.transforms[i].transform.translation.x*1000)) + ",";
-        output = output + std::to_string(static_cast<int>(aruco_.transforms[i].transform.translation.y*1000))+",";
-        output = output + std::to_string(static_cast<int>(aruco_.transforms[i].transform.translation.z*1000))+"/";
+        #ifdef POINT_MODE
+            output = float_to_string(aruco_.transforms[i].transform.translation.x, ",");
+            output += float_to_string(aruco_.transforms[i].transform.translation.y, ",");
+            output += float_to_string(aruco_.transforms[i].transform.translation.z, "/");
+        #endif
+        #ifdef NODE_MODE
+            output = flaot_to_node_string(aruco_.transforms[i].transform.translation.x, aruco_.transforms[i].transform.translation.y, ",");
+            //output += flaot_to_node_string(aruco_.transforms[i].transform.translation.z, ",");
+        #endif
     }
     //std::cout <<"\noutput:"<< output;
 
@@ -83,7 +121,12 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
   }
   //output[output.size()-1] = '\0';
   output = output.substr(0,output.size()-1);
+#ifdef POINT_MODE
   output = output + "--";
+#endif
+#ifdef NODE_MODE
+  output = output + "]";
+#endif
   std::cout <<output <<"\n";
   std::ofstream fp("obstacle.txt");
   fp << output;
