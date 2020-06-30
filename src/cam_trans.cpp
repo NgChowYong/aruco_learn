@@ -10,8 +10,9 @@
 
 tf::StampedTransform cam2base;
 fiducial_msgs::FiducialTransformArray aruco_;
-std::string origin = "10";
-std::string robot = "40";
+int origin;
+int robot;
+int range = 40;
 
 //#define POINT_MODE
 #define NODE_MODE
@@ -29,8 +30,8 @@ std::string float_to_node_string(float fx, float fy, std::string n){
   // x1  x2  x3  x4  x5
   // for case above node = 5y + x
   // for x 11 = 2y + 1x = 10 + 1 = 11
-  int fxx = static_cast<int>(fx * 100 / 40);
-  int fyy = static_cast<int>(fy * 100 / 40);
+  int fxx = static_cast<int>(fx * 100 / range);
+  int fyy = static_cast<int>(fy * 100 / range);
   return std::to_string(fyy*10 + fxx) + n;
 }
 
@@ -45,38 +46,12 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
   std::string output = "--";
 #endif
 #ifdef NODE_MODE
-  std::string output = "[";
+  std::string output = "S,";
 #endif
   std::string robot_output = "";
   std::string temp;
   for(int i = 0;i < aruco_.transforms.size();i++){
-
-    if(aruco_.transforms[i].fiducial_id == std::stoi(robot)){
-        found_robot_flag = 1;
-        #ifdef POINT_MODE
-            robot_output = flaot_to_string(aruco_.transforms[i].transform.translation.x, ",");
-            robot_output += flaot_to_string(aruco_.transforms[i].transform.translation.y, ",");
-            robot_output += flaot_to_string(aruco_.transforms[i].transform.translation.z, "/");
-        #endif
-        #ifdef NODE_MODE
-            robot_output = flaot_to_node_string(aruco_.transforms[i].transform.translation.x, aruco_.transforms[i].transform.translation.y, ",");
-            //robot_output += flaot_to_node_string(aruco_.transforms[i].transform.translation.z, ",");
-        #endif
-    }else{
-        found_robot_flag = 0;
-        #ifdef POINT_MODE
-            output = float_to_string(aruco_.transforms[i].transform.translation.x, ",");
-            output += float_to_string(aruco_.transforms[i].transform.translation.y, ",");
-            output += float_to_string(aruco_.transforms[i].transform.translation.z, "/");
-        #endif
-        #ifdef NODE_MODE
-            output = flaot_to_node_string(aruco_.transforms[i].transform.translation.x, aruco_.transforms[i].transform.translation.y, ",");
-            //output += flaot_to_node_string(aruco_.transforms[i].transform.translation.z, ",");
-        #endif
-    }
-    //std::cout <<"\noutput:"<< output;
-
-    if(aruco_.transforms[i].fiducial_id == std::stoi(origin)){
+    if(aruco_.transforms[i].fiducial_id == origin){
       tf::TransformBroadcaster br;
       tf::Transform cam2pos;
       cam2pos.setOrigin(  tf::Vector3(aruco_.transforms[i].transform.translation.x,aruco_.transforms[i].transform.translation.y,aruco_.transforms[i].transform.translation.z));
@@ -89,6 +64,51 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
       found_flag = 1;
       ROS_INFO("found origin !");
     }
+    if(aruco_.transforms[i].fiducial_id == robot){
+        found_robot_flag = 1;
+        #ifdef POINT_MODE
+            robot_output += flaot_to_string(aruco_.transforms[i].transform.translation.x, ",");
+            robot_output += flaot_to_string(aruco_.transforms[i].transform.translation.y, ",");
+            robot_output += flaot_to_string(aruco_.transforms[i].transform.translation.z, "/");
+        #endif
+        #ifdef NODE_MODE
+            robot_output += "";
+            //robot_output = float_to_node_string(aruco_.transforms[i].transform.translation.x, aruco_.transforms[i].transform.translation.y, ",");
+            //robot_output += float_to_node_string(aruco_.transforms[i].transform.translation.z, ",");
+        #endif
+    }else{
+        #ifdef POINT_MODE
+            output += float_to_string(aruco_.transforms[i].transform.translation.x, ",");
+            output += float_to_string(aruco_.transforms[i].transform.translation.y, ",");
+            output += float_to_string(aruco_.transforms[i].transform.translation.z, "/");
+        #endif
+        #ifdef NODE_MODE
+            if(aruco_.transforms[i].fiducial_id != origin){
+              tf::TransformListener listener;
+              tf::StampedTransform transform;
+              try{
+                std::string ss1 = "/fiducial_";
+                std::string ss2 = "/fiducial_";
+                ss1.append(std::to_string(aruco_.transforms[i].fiducial_id));
+                ss2.append(std::to_string(origin));
+                listener.waitForTransform(ss2,ss1,ros::Time(0),ros::Duration(2.0));
+                listener.lookupTransform(ss2,ss1,ros::Time(0),transform);
+                //listener.lookupTransform(ss2,ss1,ros::Time(0),transform);
+               }catch(tf::TransformException ex){
+                 std::cout<<"\nNOT FOUND --" << ex.what()<<"\n";
+               }
+
+               float x = transform.getOrigin().x();
+               float y = transform.getOrigin().y();
+               //std::cout <<"\t"<< x<<" , "<<y<<"\n";
+               output += float_to_node_string(x, y, ",");
+               //output += flaot_to_node_string(aruco_.transforms[i].transform.translation.z, ",");
+              }
+        #endif
+    }
+    //std::cout <<"\noutput:"<< output;
+
+
 /*
     if(aruco_.transforms[i].fiducial_id == std::stoi(robot)){
       tf::TransformBroadcaster br;
@@ -104,6 +124,7 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
       ROS_INFO("found origin !");
     }
 */
+
   }
   if (found_robot_flag == 1){
     temp = "";
@@ -125,35 +146,37 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
   output = output + "--";
 #endif
 #ifdef NODE_MODE
-  output = output + "]";
+  output = output + ",E";
 #endif
-  std::cout <<output <<"\n";
-  std::ofstream fp("obstacle.txt");
+  std::cout << output <<"\n";
+  std::ofstream fp("/home/icmems/obs.txt");
   fp << output;
   fp.close();
+
 }
 
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "cam_tf");
   ros::NodeHandle n;
-  ros::Subscriber sub = n.subscribe("fiducial_transforms", 2, MarkerCallback);
-
-  tf::TransformListener Listener;
-  Listener.waitForTransform("/camera_color_optical_frame","/base_link",ros::Time(0),ros::Duration(5.0));
-  Listener.lookupTransform("/camera_color_optical_frame","/base_link",ros::Time(0),cam2base);
-
-  if(n.hasParam("origin_id")) {
-    n.getParam("origin_id",origin);
+  if(ros::param::has("/origin_id")) {
+    ros::param::get("/origin_id",origin);
   }else{
-    origin = "10";
+    origin = 10;
   }
-  
+  std::cout << "origin: "<< origin <<"\n";
+
   if(n.hasParam("robot_id")) {
     n.getParam("robot_id",robot);
   }else{
-    robot = "40";
+    robot = 40;
   }
+  std::cout << "robot: "<< robot <<"\n";
+
+  ros::Subscriber sub = n.subscribe("fiducial_transforms", 2, MarkerCallback);
+  tf::TransformListener Listener;
+  Listener.waitForTransform("/camera_color_optical_frame","/base_link",ros::Time(0),ros::Duration(5.0));
+  Listener.lookupTransform("/camera_color_optical_frame","/base_link",ros::Time(0),cam2base);
 
   ros::spin();
 

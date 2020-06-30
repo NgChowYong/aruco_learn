@@ -116,17 +116,7 @@ Visualization Manager:
           Value: true
         camera_link:
           Value: true
-        fiducial_10:
-          Value: true
-        fiducial_20:
-          Value: true
-        fiducial_40:
-          Value: true
-        fiducial_50:
-          Value: true
-        fiducial_60:
-          Value: true
-        map:
+        fiducial_30:
           Value: true
       Marker Scale: 0.10000000149011612
       Name: TF
@@ -142,15 +132,7 @@ Visualization Manager:
                   {}
               camera_color_frame:
                 camera_color_optical_frame:
-                  fiducial_10:
-                    {}
-                  fiducial_20:
-                    {}
-                  fiducial_40:
-                    {}
-                  fiducial_50:
-                    {}
-                  fiducial_60:
+                  fiducial_30:
                     {}
               camera_depth_frame:
                 camera_depth_optical_frame:
@@ -164,8 +146,6 @@ Visualization Manager:
               camera_infra2_frame:
                 camera_infra2_optical_frame:
                   {}
-        map:
-          {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -253,10 +233,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: -0.2147964984178543
+      Pitch: -0.12979663908481598
       Target Frame: <Fixed Frame>
       Value: ThirdPersonFollower (rviz)
-      Yaw: 3.18346905708313
+      Yaw: 3.17846941947937
     Saved: ~
 Window Geometry:
   Displays:
