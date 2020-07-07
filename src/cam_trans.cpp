@@ -12,7 +12,9 @@ tf::StampedTransform cam2base;
 fiducial_msgs::FiducialTransformArray aruco_;
 int origin;
 int robot;
-int range = 40;
+int range = 30;
+
+
 
 //#define POINT_MODE
 #define NODE_MODE
@@ -87,9 +89,12 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
               tf::TransformListener listener;
               tf::StampedTransform transform;
               try{
-                std::string ss1 = "/fiducial_";
+                //std::string ss1 = "/fiducial_";
+		// second try
+                std::string ss1 = "/camera_color_optical_frame";
                 std::string ss2 = "/fiducial_";
-                ss1.append(std::to_string(aruco_.transforms[i].fiducial_id));
+		// second try
+                //ss1.append(std::to_string(aruco_.transforms[i].fiducial_id));
                 ss2.append(std::to_string(origin));
                 listener.waitForTransform(ss2,ss1,ros::Time(0),ros::Duration(2.0));
                 listener.lookupTransform(ss2,ss1,ros::Time(0),transform);
@@ -98,9 +103,33 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
                  std::cout<<"\nNOT FOUND --" << ex.what()<<"\n";
                }
 
-               float x = transform.getOrigin().x();
-               float y = transform.getOrigin().y();
+		// second try
+               //float x = transform.getOrigin().x();
+               //float y = transform.getOrigin().y();
+               tf::Quaternion q = transform.getRotation();
+               tf::Matrix3x3 mr(q);
+               //tf::Quaternion q2(aruco_.transforms[i].transform.translation.x,aruco_.transforms[i].transform.translation.y,aruco_.transforms[i].transform.translation.z,0);
+
+               //tf::Quaternion q3 = q*q2;
+               //geometry_msgs::Vector3 v3 = q * aruco_.transforms[i].transform.translation;
+               //v3 = q + transform.getOrigin();
+               //std::cout << x <<" : " << y << "\n";
+               //std::cout << "q: " << q.x() <<" "<<q.y()<<" "<<q.z()<<" "<<q.w() << "\n";
+               //std::cout << "mr:" << mr[0][0]<<" "<<mr[0][1]<<" "<< mr[0][2] << "\n";
+               //std::cout << "mr:" << mr[1][0]<<" "<<mr[1][1]<<" "<< mr[1][2] << "\n";
+               //std::cout << "mr:" << mr[2][0]<<" "<<mr[2][1]<<" "<< mr[2][2] << "\n";
+               //std::cout << "q2: " << q2.x() <<" "<<q2.y()<<" "<<q2.z()<<" "<<q2.w() << "\n";
+               //std::cout << "q3: " << q3.x() <<" "<<q3.y()<<" "<<q3.z()<<" "<<q3.w() << "\n";
+               //std::cout << "q: " << q<< " :=:  "<< v3 << "\n";
                //std::cout <<"\t"<< x<<" , "<<y<<"\n";
+               float xx = aruco_.transforms[i].transform.translation.x;
+               float yy = aruco_.transforms[i].transform.translation.y;
+               float zz = aruco_.transforms[i].transform.translation.z;
+               float x = mr[0][0] * xx + mr[0][1] * yy + mr[0][2] * zz + transform.getOrigin().x();
+               float y = mr[1][0] * xx + mr[1][1] * yy + mr[1][2] * zz + transform.getOrigin().y();
+               float z = mr[2][0] * xx + mr[2][1] * yy + mr[2][2] * zz + transform.getOrigin().z();
+               std::cout<< "xyz:"<< x<<" "<<y <<" "<<z  <<"\n";
+               //float y = transform.getOrigin().y();
                output += float_to_node_string(x, y, ",");
                //output += flaot_to_node_string(aruco_.transforms[i].transform.translation.z, ",");
               }
@@ -149,7 +178,7 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
   output = output + ",E";
 #endif
   std::cout << output <<"\n";
-  std::ofstream fp("/home/icmems/obs.txt");
+  std::ofstream fp("/home/icmems/WALLE_project/OA_by_MOEA/OA_by_MOEA/Data_Exchange/obstacle_position.txt");
   fp << output;
   fp.close();
 
