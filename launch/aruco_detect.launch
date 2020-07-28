@@ -4,7 +4,7 @@
   <arg name="camera" default="/camera/color"/>
   <arg name="image" default="image_raw"/>
   <arg name="transport" default="compressed"/>
-  <arg name="fiducial_len" default="0.15"/> # length of 1 side of aruco in m
+  <arg name="fiducial_len" default="0.10"/> # length of 1 side of aruco in m
   <arg name="dictionary" default="16"/> # this is orginal aruco dir
   <arg name="do_pose_estimation" default="true"/>
   <arg name="ignore_fiducials" default="1-2" />

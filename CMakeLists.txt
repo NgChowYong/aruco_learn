@@ -38,3 +38,10 @@ target_link_libraries(${PROJECT_NAME}
    ${catkin_LIBRARIES}
  )
 
+
+add_executable(cam_error src/cam_error_measure.cpp)
+add_dependencies(cam_error ${cam_error_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(cam_error
+   ${catkin_LIBRARIES}
+ )
+

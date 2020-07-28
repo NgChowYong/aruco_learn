@@ -86,12 +86,12 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
         #endif
         #ifdef NODE_MODE
             if(aruco_.transforms[i].fiducial_id != origin){
-              /*double x2 = aruco_.transforms[i].transform.translation.x;
+              double x2 = aruco_.transforms[i].transform.translation.x;
               double y2 = aruco_.transforms[i].transform.translation.y;
               double z2 = aruco_.transforms[i].transform.translation.z;
               double dist = sqrt(x2*x2 + y2*y2 + z2*z2);
               std::cout << "distance: "<<dist<<"\n";
-              */
+
               tf::TransformListener listener;
               tf::StampedTransform transform;
               try{
@@ -102,11 +102,11 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
 		// second try
                 //ss1.append(std::to_string(aruco_.transforms[i].fiducial_id));
                 ss2.append(std::to_string(origin));
-                listener.waitForTransform(ss2,ss1,ros::Time(0),ros::Duration(2.0));
+                //listener.waitForTransform(ss2,ss1,ros::Time(0),ros::Duration(2.0));
                 listener.lookupTransform(ss2,ss1,ros::Time(0),transform);
                 //listener.lookupTransform(ss2,ss1,ros::Time(0),transform);
                }catch(tf::TransformException ex){
-                 std::cout<<"\nNOT FOUND --" << ex.what()<<"\n";
+                 //std::cout<<"\nNOT FOUND --" << ex.what()<<"\n";
                }
 
 		// second try
@@ -183,7 +183,7 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
 #ifdef NODE_MODE
   output = output + ",E";
 #endif
-  std::cout << output <<"\n";
+  //std::cout << output <<"\n";
   std::ofstream fp("/home/icmems/WALLE_project/OA_by_MOEA/OA_by_MOEA/Data_Exchange/obstacle_position.txt");
   fp << output;
   fp.close();
@@ -192,7 +192,7 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "cam_tf");
+  ros::init(argc, argv, "cam_tf_error_measure");
   ros::NodeHandle n;
   if(ros::param::has("/origin_id")) {
     ros::param::get("/origin_id",origin);
