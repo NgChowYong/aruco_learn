@@ -8,6 +8,7 @@ add_compile_options(-std=c++11)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  geometry_msgs
   fiducial_msgs
   std_msgs
   roscpp
@@ -15,12 +16,22 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
+add_message_files(
+  FILES
+  Camera_Data.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
+)
 
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES aruco_learn
 #  CATKIN_DEPENDS aruco roscpp rospy
 #  DEPENDS system_lib
+  CATKIN_DEPENDS message_runtime
 )
 
 
@@ -42,6 +53,13 @@ target_link_libraries(${PROJECT_NAME}
 add_executable(cam_error src/cam_error_measure.cpp)
 add_dependencies(cam_error ${cam_error_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(cam_error
+   ${catkin_LIBRARIES}
+ )
+
+
+add_executable(cam_localization src/camera_localization.cpp)
+add_dependencies(cam_localization ${cam_error_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(cam_localization
    ${catkin_LIBRARIES}
  )
 
