@@ -11,10 +11,13 @@
 // global variable or handler
 ros::Publisher                          pub;
 ros::Subscriber                         sub;
-tf::StampedTransform                    cam2base;
 fiducial_msgs::FiducialTransformArray   aruco_;
 localization::Camera_Data               camdata;
-tf::StampedTransform 			transform;
+tf::TransformBroadcaster                broadcast;
+tf::StampedTransform                    map2base;
+tf::StampedTransform                    cam2base;
+tf::Transform                           cam2pos;//  from origin to camera
+
 // initial tag variable
 int origin = 1;
 int robot  = 2;
@@ -40,18 +43,15 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
   for(int i = 0;i < aruco_.transforms.size();i++){
     if(aruco_.transforms[i].fiducial_id == origin){
       ROS_INFO("found origin !");
-      tf::TransformBroadcaster br;
-      tf::Transform cam2pos;
+
       cam2pos.setOrigin(  tf::Vector3(aruco_.transforms[i].transform.translation.x,aruco_.transforms[i].transform.translation.y,aruco_.transforms[i].transform.translation.z));
       cam2pos.setRotation( tf::Quaternion(aruco_.transforms[i].transform.rotation.x,aruco_.transforms[i].transform.rotation.y,aruco_.transforms[i].transform.rotation.z ,aruco_.transforms[i].transform.rotation.w));
-
-      // from pos to camera then camera to base => pos to base, let the origin pose be map
+      // from pos to camera then camera to base => pos to base => map origin to base link, let the origin pose be map
       // it become map to base link
-      tf::Transform pos2base;
-      cam2pos = cam2pos.inverse();
-      pos2base = cam2pos * cam2base;
-      br.sendTransform(tf::StampedTransform(pos2base, ros::Time::now(), "map","base_link"));
-  
+      cam2pos = cam2pos.inverse(); // become from origin to camera
+      map2base = cam2pos.inverse() * cam2base;
+      // publish at main while loop
+
       camdata.Camera_Pose.position.x = cam2pos.getOrigin().x();
       camdata.Camera_Pose.position.y = cam2pos.getOrigin().y();
       camdata.Camera_Pose.position.z = cam2pos.getOrigin().z();
@@ -61,42 +61,48 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
         // especially for multiple tag read
         tf::TransformListener listener;
 
-        // find from camera frame to origin
-	// do once is enough ?
-        try {
-            std::string ss1 = "/camera_color_optical_frame";
-            std::string ss2 = "/fiducial_";
-            ss2.append(std::to_string(origin));
-            // from cam to origin
-            // listener.waitForTransform(ss2, ss1, ros::Time(0), ros::Duration(0.001));
-            listener.lookupTransform(ss2, ss1, ros::Time(0), transform);
-        } catch (tf::TransformException ex) {
-            std::cout << "\nNOT FOUND --" << ex.what() << "\n";
-        }
-
-        // rotation from rotation and translation
-        tf::Quaternion q = transform.getRotation();
+        // find from camera frame to origin => 
+        // become from origin to camera
+        tf::Quaternion q = cam2pos.getRotation();
         tf::Matrix3x3 mr(q);
-        float xx = aruco_.transforms[i].transform.translation.x;
-        float yy = aruco_.transforms[i].transform.translation.y;
-        float zz = aruco_.transforms[i].transform.translation.z;
 
-        // do rotation and translation to get 'x y z' wrt origin 
-        float x = mr[0][0] * xx + mr[0][1] * yy + mr[0][2] * zz + transform.getOrigin().x();
-        float y = mr[1][0] * xx + mr[1][1] * yy + mr[1][2] * zz + transform.getOrigin().y();
-        float z = mr[2][0] * xx + mr[2][1] * yy + mr[2][2] * zz + transform.getOrigin().z();
+        //try {
+        //    std::string ss1 = "/camera_color_optical_frame";
+        //    std::string ss2 = "/fiducial_";
+        //    ss2.append(std::to_string(origin));
+        //    // from cam to origin
+        //    // listener.waitForTransform(ss2, ss1, ros::Time(0), ros::Duration(0.001));
+        //    listener.lookupTransform(ss2, ss1, ros::Time(0), transform);
+        //} catch (tf::TransformException ex) {
+        //    std::cout << "\nNOT FOUND --" << ex.what() << "\n";
+        //}
 
+        //// rotation from rotation and translation
+        //tf::Quaternion q = transform.getRotation();
+        //tf::Matrix3x3 mr(q);
+
+        double xx = aruco_.transforms[i].transform.translation.x;
+        double yy = aruco_.transforms[i].transform.translation.y;
+        double zz = aruco_.transforms[i].transform.translation.z;
+
+        //// do rotation and translation to get 'x y z' wrt origin 
+        double x = mr[0][0] * xx + mr[0][1] * yy + mr[0][2] * zz + transform.getOrigin().x();
+        double y = mr[1][0] * xx + mr[1][1] * yy + mr[1][2] * zz + transform.getOrigin().y();
+        double z = mr[2][0] * xx + mr[2][1] * yy + mr[2][2] * zz + transform.getOrigin().z();
+
+        std::cout << "xyz:" << cam2pos.getOrigin().x() << " " << cam2pos.getOrigin().y() << " " << cam2pos.getOrigin().z() << "\n";
+        std::cout << "xyz:" << xx << " " << yy << " " << zz << "\n";
         std::cout << "xyz:" << x << " " << y << " " << z << "\n";
-        
+
         geometry_msgs::Pose temp;
-        //temp.position.x = x;
-        //temp.position.y = y;
-        //temp.position.z = z;
-        temp.position.x = transform.getOrigin().x();
-        temp.position.y = transform.getOrigin().y();
-        temp.position.z = transform.getOrigin().z();
+        temp.position.x = x;
+        temp.position.y = y;
+        temp.position.z = z;
+        //temp.position.x = transform.getOrigin().x();
+        //temp.position.y = transform.getOrigin().y();
+        //temp.position.z = transform.getOrigin().z();
         //temp.orientation = 1;
-	// from xyz to length and angle
+	    // from xyz to length and angle
         if(aruco_.transforms[i].fiducial_id == robot){
           camdata.Robot_Pose.poses.push_back(temp);
         }else{
@@ -104,18 +110,6 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
         }
     }
   }
-
-  // if not fond origin of map just give a coordinate
-  /*
-  if (found_flag == 0){
-      tf::TransformBroadcaster br;
-      tf::Transform original;
-      original.setOrigin(  tf::Vector3(0,0,1));
-      original.setRotation( tf::Quaternion(0,0,0,1));
-      br.sendTransform(tf::StampedTransform(original, ros::Time::now(), "map","base_link"));
-  }
-  */
-
   pub.publish(camdata);
 }
 
@@ -145,14 +139,16 @@ int main(int argc, char **argv)
   Listener.waitForTransform("/camera_color_optical_frame","/base_link",ros::Time(0),ros::Duration(5.0));
   Listener.lookupTransform("/camera_color_optical_frame","/base_link",ros::Time(0),cam2base);
 
-  tf::TransformBroadcaster br;
-  tf::Transform original;
-  original.setOrigin(  tf::Vector3(0,0,1));
-  original.setRotation( tf::Quaternion(0,0,0,1));
-  br.sendTransform(tf::StampedTransform(original, ros::Time::now(), "map","base_link"));
- 
+  // initialize map 2 base link
+  map2base.setOrigin(tf::Vector3(0, 0, 1));
+  map2base.setRotation(tf::Quaternion(0, 0, 0, 1));
+  ros::Rate loop_rate(100);
 
-  ros::spin();
-
+  // keep broadcast map 2 base tf
+  while (ros::ok()){
+      broadcast.sendTransform(tf::StampedTransform(map2base, ros::Time::now(), "map","base_link"));
+      ros::spinOnce();
+      loop_rate.sleep();
+  }
   return 0;
 }
