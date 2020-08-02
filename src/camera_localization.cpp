@@ -49,7 +49,7 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
       // from pos to camera then camera to base => pos to base => map origin to base link, let the origin pose be map
       // it become map to base link
       cam2pos = cam2pos.inverse(); // become from origin to camera
-      map2base = cam2pos.inverse() * cam2base;
+      map2base = cam2pos * cam2base;
       // publish at main while loop
 
       camdata.Camera_Pose.position.x = cam2pos.getOrigin().x();

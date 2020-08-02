@@ -1,19 +1,48 @@
 #!/usr/bin/env python3
 
-# turn into ros version
-
+# general python package
 import rospy
 import socket
+import threading
+import time
+import math
+
+# ros package
 from localization_node.msg import Camera_Data
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
+
+# for reading map only # not sure can be used or not
+import cv2
 
 HOST = '192.168.43.77'  # Standard loopback interface address (localhost)
-PORT = 11223        # Port to listen on (non-privileged ports are > 1023)
+PORT = 11223  # Port to listen on (non-privileged ports are > 1023)
+
 
 class MainThread(threading.Thread):
     def __init__(self, num):
         threading.Thread.__init__(self)
         self.num = num
-        self.new_path = 0
+        self.new_path_flag = 0
+        self.update_path_flag = 0
+
+        img = cv2.imread('simple_version_small_small.jpg', cv2.IMREAD_GRAYSCALE)
+        self.width = img.shape[1]
+        self.height = img.shape[0]
+        for i in range(self.width):
+            for j in range(self.height):
+                if img[j][i] == 0:
+                    img[j][i] = -1
+                else:
+                    img[j][i] = 0
+                    # print('strange' ,j , i)
+        self.map = img  # 0 == wall 255 = free
+
+        self.robot_pose = [100, 100, 0]  # x y theta
+        self.task1 = [200, 100, 0]  # x y theta
+        self.task2 = [100, 200, 0]  # x y theta
+
+        self.old_path = []
+        self.new_path = []
 
     def run(self):
         global end_flag
@@ -25,52 +54,119 @@ class MainThread(threading.Thread):
         # after start cmd
 
         start_time = time.time()
-        while (1):
+        while 1:
 
             # do smth
             time.sleep(self.num)
-            if self.new_path == 1:
-                self.new_path = 0
+
+            # update of path ?
+            if self.new_path_flag == 1:
+                self.new_path_flag = 0
                 # do a star and check for new path
+                self.Astar()
                 # if new path then set flag for update_path
+                if self.old_path != self.new_path:
+                    self.update_path_flag = 1
 
             # trigger end of code
-            if (time.time() - start_time > 100):
+            if time.time() - start_time > 100:
                 # trigger end of code
-                # break
+                break
                 pass
 
             # end of code
-            if(end_flag == 1):
+            if (end_flag == 1) or rospy.is_shutdown():
+                end_flag = 1
                 break
         print("thread end")
 
-    def update_data(self, data, ret):
+    def update_pose(self, pose_update):
         print("test")
-        # do map update
-        self.update_map(data.Obstacle_Pose)
-        # do cehcking for path update
-        self.new_path = 1
+        # update pose of robot, camera pose is not needed in calculation
+        if pose_update is not None:
+            self.robot_pose = pose_update
 
-    def update_map(data):
+    def update_map(self, data):
         # update map
-        pass
+        for i in range(len(data.poses)):
+            self.map[int(data.poses[i].position.x)][int(data.poses[i].position.y)] = 1
+        cv2.imshow('image', self.map)
+
+        # do cehcking for path update
+        self.new_path_flag = 1
 
     def update_path(self, ret):
-        # return ret + "P,1,2,3,4,5,6"
-        return ret
+        if self.update_path_flag == 0:
+            self.update_path_flag = 1
+            temp = "P,"
+            for i in range(int(len(self.new_path) / 2)):
+                temp = temp + self.new_path[i * 2], "," + self.new_path[i * 2 + 1] + ","
+            return ret + temp
+        else:
+            return ret
+
+    def Astar(self):
+        pass
 
 
+# TODO: need to calculate distance and angle in 2D
 def Robot_Data_Process(data, ret):
     # calculate length and angle of robot
-    return ret + "R,2,3,"
+    # x,y, theta
+    x = 0
+    y = 0
+    theta = 0
+    l = len(data)
+    if l > 1:
+        # TODO : modify this code here to use multiple tag
+        for i in range(l):
+            # do find center
+            # do estimation
+            x += data.poses[i].position.x
+            y += data.poses[i].position.y
+            # do rotation getting out
+        x = x / len(data)
+        y = y / len(data)
+        # x = x/len(data)
+
+    elif l == 1:
+        x = data.poses[0].position.x
+        y = data.poses[0].position.y
+
+        q1 = quaternion_inverse(data.poses[0].orientation)
+
+        # x y z
+        vir_vector_x = [1, 0, 0]
+        # x y z w in ros
+        q2 = list(v1)
+        q2.append(0.0)
+
+        result = tf.transformations.quaternion_multiply(
+            tf.transformations.quaternion_multiply(q1, q2),
+            tf.transformations.quaternion_conjugate(q1)
+        )
+        # angle calculation
+        angle = math.atan2(result[1], result[0])
+
+    else:
+        return [ret, None]
+
+    distance = math.sqrt(x ^ 2 + y ^ 2)
+    pose_update = [x, y, angle]
+    return [(ret + "R," + distance + "," + angle + ","), pose_update]
+
 
 def Cam_Data_Process(data):
-    return ret + "C,2,3,"
+    # get camera position in x y z
+    # data.position.x # poses
+    return ret + "C," + data.position.x + "," + data.position.y + ","
+
 
 def Path_Data_Process(data):
-    return ret + "P,2,3,3,4"
+    return ret + "P,2,3,3,4,"
 
+
+# callback function for rospy to used
 def callback(data):
     global data_receive, data_receive_flag
     global main_code
@@ -80,32 +176,29 @@ def callback(data):
     ret = "PC,"
 
     # robot
-    ret   = Robot_Data_Process(data.Robot_Pose,ret)
+    ret, pose_update = Robot_Data_Process(data.Robot_Pose, ret)
+    main_code.update_pose(pose_update)
 
     # camera pose
-    ret   = Cam_Data_Process(data.Camera_Pose ,ret)
+    ret = Cam_Data_Process(data.Camera_Pose, ret)
 
     # obstacle and path
-    # ret    = Path_Data_Process(data.Obstacle_Pose,ret)
-    main_code.update_data(data)
-    ret   = main_code.update_path(ret)
+    main_code.update_map(data)
+    ret = main_code.update_path(ret)
 
     # data_receive = 'PC,R,1,-2,C,11,23,P,2,3,4,5,6,7,E'
     data_receive = ret + "E"
     data_receive_flag = 1
 
-if __name__ == '__main__':
-    global data_receive, data_receive_flag
-    rospy.init_node('SendDataToSTM', anonymous=True)
-    rospy.Subscriber("Camera_Data", Camera_Data, callback)
 
+# Send data to STM
+# haven't done update data from STM part
+def wifi_communication():
+    global data_receive, data_receive_flag
     global end_flag, main_code
-    end_flag = 0
-    main_code = MainThread(1)
-    main_code.run()
 
     count = 0
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s: # stream using TCP, afinet is using ipv4
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:  # stream using TCP, afinet is using ipv4
         s.bind((HOST, PORT))
         # creating listening port
         s.listen()
@@ -128,19 +221,37 @@ if __name__ == '__main__':
                     #     conn.sendall(data)
                     # else:
 
-                    # need to update data from stm ~
+                    # TODO: future used for location update from robot
+                    # main_code.update_pose(pose_update)
 
-                if data_receive_flag == 1
+                if data_receive_flag == 1:
                     data_receive_flag = 0
                     # data_receive = 'PC,R,1,-2,C,11,23,P,2,3,4,5,6,7,8,9,12,13,E'
-                    data_receive = data_receive.encode("utf-8")
+                    data_receive_ = data_receive.encode("utf-8")
                     # send data to client
-                    conn.sendall(data_receive)
+                    conn.sendall(data_receive_)
 
                     # count = count + 1
 
                 # client wil send close message then close
-                if not data:
+                if not data or rospy.is_shutdown() or end_flag == 1:
                     break
+
+
+if __name__ == '__main__':
+    rospy.init_node('SendDataToSTM', anonymous=True)
+    rospy.Subscriber("Camera_Data", Camera_Data, callback)
+
+    # run main code
+    global end_flag, main_code
+    end_flag = 0
+    main_code = MainThread(1)
+    main_code.run()
+
+    # run continuous communication with DK2
+    wifi_communication()
+
+    # flag for closing main code
+    # TODO: end flag trigger for 3 threads
     end_flag = 1
     # rospy.spin()
