@@ -134,6 +134,7 @@ def Robot_Data_Process(data, ret):
         x = data.poses[0].position.x
         y = data.poses[0].position.y
 
+        # angle already rotate
         theta = math.atan2(data.poses[0].orientation.y, data.poses[0].orientation.x)
 
     else:
