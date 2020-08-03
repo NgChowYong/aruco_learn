@@ -10,10 +10,8 @@
 
 // global variable or handler
 ros::Publisher                          pub;
-ros::Subscriber                         sub;
 fiducial_msgs::FiducialTransformArray   aruco_;
 localization::Camera_Data               camdata;
-tf::TransformBroadcaster                broadcast;
 tf::StampedTransform                    map2base;
 tf::StampedTransform                    cam2base;
 tf::Transform                           cam2pos;//  from origin to camera
@@ -22,8 +20,7 @@ tf::Transform                           cam2pos;//  from origin to camera
 int origin = 1;
 int robot  = 2;
 
-void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
-{
+void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
   //ROS_INFO("I hear marker");
   aruco_ = *msg;
 
@@ -49,7 +46,8 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
       // from pos to camera then camera to base => pos to base => map origin to base link, let the origin pose be map
       // it become map to base link
       cam2pos = cam2pos.inverse(); // become from origin to camera
-      map2base = cam2pos * cam2base;
+      //map2base = cam2pos * cam2base;
+      map2base.setData(cam2pos * cam2base);
       // publish at main while loop
 
       camdata.Camera_Pose.position.x = cam2pos.getOrigin().x();
@@ -86,9 +84,9 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
         double zz = aruco_.transforms[i].transform.translation.z;
 
         //// do rotation and translation to get 'x y z' wrt origin 
-        double x = mr[0][0] * xx + mr[0][1] * yy + mr[0][2] * zz + transform.getOrigin().x();
-        double y = mr[1][0] * xx + mr[1][1] * yy + mr[1][2] * zz + transform.getOrigin().y();
-        double z = mr[2][0] * xx + mr[2][1] * yy + mr[2][2] * zz + transform.getOrigin().z();
+        double x = mr[0][0] * xx + mr[0][1] * yy + mr[0][2] * zz + cam2pos.getOrigin().x();
+        double y = mr[1][0] * xx + mr[1][1] * yy + mr[1][2] * zz + cam2pos.getOrigin().y();
+        double z = mr[2][0] * xx + mr[2][1] * yy + mr[2][2] * zz + cam2pos.getOrigin().z();
 
         std::cout << "xyz:" << cam2pos.getOrigin().x() << " " << cam2pos.getOrigin().y() << " " << cam2pos.getOrigin().z() << "\n";
         std::cout << "xyz:" << xx << " " << yy << " " << zz << "\n";
@@ -98,6 +96,12 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
         temp.position.x = x;
         temp.position.y = y;
         temp.position.z = z;
+
+        // TODO : need to improve relative rotation here !!! 
+        temp.orientation.x = aruco_.transforms[i].transform.rotation.x;
+        temp.orientation.y = aruco_.transforms[i].transform.rotation.y;
+        temp.orientation.z = aruco_.transforms[i].transform.rotation.z;
+        temp.orientation.w = aruco_.transforms[i].transform.rotation.w;
         //temp.position.x = transform.getOrigin().x();
         //temp.position.y = transform.getOrigin().y();
         //temp.position.z = transform.getOrigin().z();
@@ -115,8 +119,9 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg)
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "cam_tf");
+  ros::init(argc, argv, "cam_localization");
   ros::NodeHandle n;
+
   if(ros::param::has("/origin_id")) {
     ros::param::get("/origin_id",origin);
   }else{
@@ -131,7 +136,9 @@ int main(int argc, char **argv)
   }
   std::cout << "robot: "<< robot <<"\n";
 
+
   pub = n.advertise<localization::Camera_Data>("Camera_Data", 10);
+  ros::Subscriber                         sub;
   sub = n.subscribe("fiducial_transforms", 2, MarkerCallback);
 
   // find transformation from camera lens to base
@@ -145,6 +152,7 @@ int main(int argc, char **argv)
   ros::Rate loop_rate(100);
 
   // keep broadcast map 2 base tf
+  tf::TransformBroadcaster                broadcast;
   while (ros::ok()){
       broadcast.sendTransform(tf::StampedTransform(map2base, ros::Time::now(), "map","base_link"));
       ros::spinOnce();

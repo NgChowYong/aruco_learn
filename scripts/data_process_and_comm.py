@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 
 # general python package
 import rospy
@@ -8,8 +8,9 @@ import time
 import math
 
 # ros package
-from localization_node.msg import Camera_Data
-from tf.transformations import euler_from_quaternion, quaternion_from_euler
+from localization.msg import Camera_Data
+import tf
+# from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 # for reading map only # not sure can be used or not
 import cv2
@@ -25,7 +26,7 @@ class MainThread(threading.Thread):
         self.new_path_flag = 0
         self.update_path_flag = 0
 
-        img = cv2.imread('simple_version_small_small.jpg', cv2.IMREAD_GRAYSCALE)
+        img = cv2.imread('/home/icmems/WALLE_project/catkin_ws/src/localization/simple_version_small_small.jpg', cv2.IMREAD_GRAYSCALE)
         self.width = img.shape[1]
         self.height = img.shape[0]
         for i in range(self.width):
@@ -81,15 +82,15 @@ class MainThread(threading.Thread):
         print("thread end")
 
     def update_pose(self, pose_update):
-        print("test")
+        #print("test")
         # update pose of robot, camera pose is not needed in calculation
         if pose_update is not None:
             self.robot_pose = pose_update
 
     def update_map(self, data):
         # update map
-        for i in range(len(data.poses)):
-            self.map[int(data.poses[i].position.x)][int(data.poses[i].position.y)] = 1
+        for i in range(len(data.Obstacle_Pose.poses)):
+            self.map[int(data.Obstacle_Pose.poses[i].position.x)][int(data.Obstacle_Pose.poses[i].position.y)] = 1
         cv2.imshow('image', self.map)
 
         # do cehcking for path update
@@ -116,7 +117,7 @@ def Robot_Data_Process(data, ret):
     x = 0
     y = 0
     theta = 0
-    l = len(data)
+    l = len(data.poses)
     if l > 1:
         # TODO : modify this code here to use multiple tag
         for i in range(l):
@@ -133,12 +134,14 @@ def Robot_Data_Process(data, ret):
         x = data.poses[0].position.x
         y = data.poses[0].position.y
 
-        q1 = quaternion_inverse(data.poses[0].orientation)
+        #q1 = quaternion_inverse(data.poses[0].orientation)
+        temp = [data.poses[0].orientation.x,data.poses[0].orientation.y,data.poses[0].orientation.z,data.poses[0].orientation.w]
+        q1 = tf.transformations.quaternion_inverse(temp)
 
         # x y z
         vir_vector_x = [1, 0, 0]
         # x y z w in ros
-        q2 = list(v1)
+        q2 = list(vir_vector_x)
         q2.append(0.0)
 
         result = tf.transformations.quaternion_multiply(
@@ -146,20 +149,31 @@ def Robot_Data_Process(data, ret):
             tf.transformations.quaternion_conjugate(q1)
         )
         # angle calculation
+        print("result:")
+        print(data.poses[0])
+        print(temp)
+        print(q1)
+        print(tf.transformations.quaternion_multiply(q1, q2)) 
+        print(tf.transformations.quaternion_conjugate(q1))
+        print(tf.transformations.quaternion_multiply(
+            tf.transformations.quaternion_multiply(q1, q2),
+            tf.transformations.quaternion_conjugate(q1)
+        ))
+        print(result)
         angle = math.atan2(result[1], result[0])
 
     else:
         return [ret, None]
 
-    distance = math.sqrt(x ^ 2 + y ^ 2)
+    distance = math.sqrt(x*x + y*y)
     pose_update = [x, y, angle]
-    return [(ret + "R," + distance + "," + angle + ","), pose_update]
+    return [(ret + "R," + str(distance) + "," + str(angle) + ","), pose_update]
 
 
-def Cam_Data_Process(data):
+def Cam_Data_Process(data, ret):
     # get camera position in x y z
     # data.position.x # poses
-    return ret + "C," + data.position.x + "," + data.position.y + ","
+    return ret + "C," + str(data.position.x) + "," + str(data.position.y) + ","
 
 
 def Path_Data_Process(data):
@@ -189,7 +203,7 @@ def callback(data):
     # data_receive = 'PC,R,1,-2,C,11,23,P,2,3,4,5,6,7,E'
     data_receive = ret + "E"
     data_receive_flag = 1
-
+    print(data_receive)
 
 # Send data to STM
 # haven't done update data from STM part
@@ -228,6 +242,7 @@ def wifi_communication():
                     data_receive_flag = 0
                     # data_receive = 'PC,R,1,-2,C,11,23,P,2,3,4,5,6,7,8,9,12,13,E'
                     data_receive_ = data_receive.encode("utf-8")
+
                     # send data to client
                     conn.sendall(data_receive_)
 

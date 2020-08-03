@@ -8,6 +8,7 @@ add_compile_options(-std=c++11)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  message_generation
   geometry_msgs
   fiducial_msgs
   std_msgs
@@ -58,7 +59,7 @@ target_link_libraries(cam_error
 
 
 add_executable(cam_localization src/camera_localization.cpp)
-add_dependencies(cam_localization ${cam_error_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(cam_localization ${cam_localization_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(cam_localization
    ${catkin_LIBRARIES}
  )
