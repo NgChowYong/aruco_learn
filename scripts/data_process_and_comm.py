@@ -134,40 +134,14 @@ def Robot_Data_Process(data, ret):
         x = data.poses[0].position.x
         y = data.poses[0].position.y
 
-        #q1 = quaternion_inverse(data.poses[0].orientation)
-        temp = [data.poses[0].orientation.x,data.poses[0].orientation.y,data.poses[0].orientation.z,data.poses[0].orientation.w]
-        q1 = tf.transformations.quaternion_inverse(temp)
-
-        # x y z
-        vir_vector_x = [1, 0, 0]
-        # x y z w in ros
-        q2 = list(vir_vector_x)
-        q2.append(0.0)
-
-        result = tf.transformations.quaternion_multiply(
-            tf.transformations.quaternion_multiply(q1, q2),
-            tf.transformations.quaternion_conjugate(q1)
-        )
-        # angle calculation
-        print("result:")
-        print(data.poses[0])
-        print(temp)
-        print(q1)
-        print(tf.transformations.quaternion_multiply(q1, q2)) 
-        print(tf.transformations.quaternion_conjugate(q1))
-        print(tf.transformations.quaternion_multiply(
-            tf.transformations.quaternion_multiply(q1, q2),
-            tf.transformations.quaternion_conjugate(q1)
-        ))
-        print(result)
-        angle = math.atan2(result[1], result[0])
+        theta = math.atan2(data.poses[0].orientation.y, data.poses[0].orientation.x)
 
     else:
         return [ret, None]
 
     distance = math.sqrt(x*x + y*y)
-    pose_update = [x, y, angle]
-    return [(ret + "R," + str(distance) + "," + str(angle) + ","), pose_update]
+    pose_update = [x, y, theta]
+    return [(ret + "R," + str(distance) + "," + str(theta) + ","), pose_update]
 
 
 def Cam_Data_Process(data, ret):

@@ -98,14 +98,27 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
         temp.position.z = z;
 
         // TODO : need to improve relative rotation here !!! 
-        temp.orientation.x = aruco_.transforms[i].transform.rotation.x;
-        temp.orientation.y = aruco_.transforms[i].transform.rotation.y;
-        temp.orientation.z = aruco_.transforms[i].transform.rotation.z;
-        temp.orientation.w = aruco_.transforms[i].transform.rotation.w;
-        //temp.position.x = transform.getOrigin().x();
-        //temp.position.y = transform.getOrigin().y();
-        //temp.position.z = transform.getOrigin().z();
-        //temp.orientation = 1;
+        // cam2pos              : from origin to camera
+        // aruco_.transforms[i] : from camera to tag
+        // q' = q2 * q1 => for q1 followed by q2 rotation
+        // tempq is relative rotation from origin to tag
+        tf::Quaternion tempq =  aruco_.transforms[i].transform.rotation * cam2pos.getRotation();
+        
+        // rotation from tag to origin
+        tempq = tempq.inverse();
+
+        // conjugate
+        tf::Quaternion tempq_conjugate = tempq;
+        for (int i = 0; i < 3; i++) {
+            tempq_conjugate.m_floats[i] = -tempq_conjugate.m_floats[i];
+        }
+
+        tf::Quaternion vect = tf::Quaternion(1,0,0,0);
+        // do rotation from x to origin 
+        vect = tempq * vect * tempq_conjugate;
+                
+        temp.orientation = vect;
+
 	    // from xyz to length and angle
         if(aruco_.transforms[i].fiducial_id == robot){
           camdata.Robot_Pose.poses.push_back(temp);
