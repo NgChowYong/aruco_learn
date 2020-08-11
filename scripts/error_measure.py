@@ -10,12 +10,27 @@ from localization.msg import Camera_Data
 import tf
 # from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
-f=open("measure_test_1.txt","w")
+file1 = "measure_obs_far_1.txt"
+file2 = "measure_cam_far_1.txt"
+
+f=open(file1,"w")
+f.close()
+f=open(file2,"w")
 f.close()
 
 # callback function for rospy to used
 def callback(data):
-    f=open("measure_test_1.txt","a")
+    f=open(file2,"a")
+    str_ = ""
+    str_ = str_ + str(data.Camera_Pose.position.x)
+    str_ = str_ + ","
+    str_ = str_ + str(data.Camera_Pose.position.y)
+    str_ = str_ + ","
+    str_ = str_ + str(data.Camera_Pose.position.z)
+    str_ = str_ + "\n"
+    f.write(str_)
+    f.close()
+    f=open(file1,"a")
     str_ = ""
     for i in range(len(data.Obstacle_Pose.poses)):
         str_ = str_ + str(data.Obstacle_ID[i])
@@ -41,7 +56,7 @@ def callback(data):
 
 
 if __name__ == '__main__':
-    f=open("measure_test_1.txt","a")
+    f=open(file1,"a")
     f.write("ID,x,y,z(position),x,y,z,w(orientation)\n")
     f.close()
     rospy.init_node('SendDataToSTM', anonymous=True)
