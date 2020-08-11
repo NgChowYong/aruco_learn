@@ -88,10 +88,11 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
         double y = mr[1][0] * xx + mr[1][1] * yy + mr[1][2] * zz + cam2pos.getOrigin().y();
         double z = mr[2][0] * xx + mr[2][1] * yy + mr[2][2] * zz + cam2pos.getOrigin().z();
 
+/*
         std::cout << "xyz:" << cam2pos.getOrigin().x() << " " << cam2pos.getOrigin().y() << " " << cam2pos.getOrigin().z() << "\n";
         std::cout << "xyz:" << xx << " " << yy << " " << zz << "\n";
         std::cout << "xyz:" << x << " " << y << " " << z << "\n";
-
+*/
         geometry_msgs::Pose temp;
         temp.position.x = x;
         temp.position.y = y;
@@ -102,22 +103,29 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
         // aruco_.transforms[i] : from camera to tag
         // q' = q2 * q1 => for q1 followed by q2 rotation
         // tempq is relative rotation from origin to tag
-        tf::Quaternion tempq =  aruco_.transforms[i].transform.rotation * cam2pos.getRotation();
+        tf::Quaternion tempa =  tf::Quaternion(aruco_.transforms[i].transform.rotation.x,aruco_.transforms[i].transform.rotation.y,aruco_.transforms[i].transform.rotation.z,aruco_.transforms[i].transform.rotation.w); 
+        tf::Quaternion tempq =  tempa * cam2pos.getRotation();
+
+        // conjugate
+        tf::Quaternion tempq_conjugate = tempq;
         
         // rotation from tag to origin
         tempq = tempq.inverse();
 
         // conjugate
-        tf::Quaternion tempq_conjugate = tempq;
-        for (int i = 0; i < 3; i++) {
-            tempq_conjugate.m_floats[i] = -tempq_conjugate.m_floats[i];
-        }
+        //tf::Quaternion tempq_conjugate = tempq;
+        //for (int i = 0; i < 3; i++) {
+        //    tempq_conjugate.m_floats[i] = -tempq_conjugate.m_floats[i];
+        //}
 
         tf::Quaternion vect = tf::Quaternion(1,0,0,0);
         // do rotation from x to origin 
         vect = tempq * vect * tempq_conjugate;
                 
-        temp.orientation = vect;
+        temp.orientation.x = vect.x();
+        temp.orientation.y = vect.y();
+        temp.orientation.z = vect.z();
+        temp.orientation.w = vect.w();
 
 	    // from xyz to length and angle
         if(aruco_.transforms[i].fiducial_id == robot){
