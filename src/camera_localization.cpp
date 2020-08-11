@@ -24,8 +24,9 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
   //ROS_INFO("I hear marker");
   aruco_ = *msg;
 
-  camdata.Obstacle_Pose.poses.erase(camdata.Obstacle_Pose.poses.begin(),camdata.Obstacle_Pose.poses.end());
-  camdata.Robot_Pose.poses.erase(camdata.Robot_Pose.poses.begin(),camdata.Robot_Pose.poses.end());
+  camdata.Obstacle_Pose.poses.erase(camdata.Obstacle_Pose.poses.begin(), camdata.Obstacle_Pose.poses.end());
+  camdata.Obstacle_ID.erase(camdata.Obstacle_ID.begin(), camdata.Obstacle_ID.end());
+  camdata.Robot_Pose.poses.erase(camdata.Robot_Pose.poses.begin(), camdata.Robot_Pose.poses.end());
 
   /* 
   * for all tag recognize
@@ -50,6 +51,7 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
       map2base.setData(cam2pos * cam2base);
       // publish at main while loop
 
+      camdata.Camera_ID = aruco_.transforms[i].fiducial_id;
       camdata.Camera_Pose.position.x = cam2pos.getOrigin().x();
       camdata.Camera_Pose.position.y = cam2pos.getOrigin().y();
       camdata.Camera_Pose.position.z = cam2pos.getOrigin().z();
@@ -121,8 +123,10 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
 
 	    // from xyz to length and angle
         if(aruco_.transforms[i].fiducial_id == robot){
-          camdata.Robot_Pose.poses.push_back(temp);
+            camdata.Robot_ID = aruco_.transforms[i].fiducial_id;
+            camdata.Robot_Pose.poses.push_back(temp);
         }else{
+          camdata.Obstacle_ID.push_back(aruco_.transforms[i].fiducial_id);
           camdata.Obstacle_Pose.poses.push_back(temp);
         }
     }
