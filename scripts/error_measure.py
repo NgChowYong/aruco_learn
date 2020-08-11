@@ -35,7 +35,8 @@ def callback(data):
         str_ = str_ + str(data.Obstacle_Pose.poses[i].orientation.w)
         str_ = str_ + "\n"
 
-
+    print(str_)
+    f.write(str_)
     f.close()
 
 

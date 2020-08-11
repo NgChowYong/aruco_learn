@@ -3,8 +3,8 @@
 <include file="$(find localization)/launch/cam_with_model.launch" />
 <include file="$(find localization)/launch/aruco_detect.launch" />
 
-<param name="origin_id"    value="30"/>
-<param name="robot_id"    value="13"/>
+<param name="origin_id"    value="10"/>
+<param name="robot_id"    value="1"/>
 <!--node pkg="localization" type="localization" name="cam_origin" output="screen" /-->
 
 </launch>

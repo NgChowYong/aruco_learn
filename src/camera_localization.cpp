@@ -7,6 +7,7 @@
 #include <fstream>
 #include <stdio.h>
 #include <string>
+#include <math.h>
 
 // global variable or handler
 ros::Publisher                          pub;
@@ -19,6 +20,10 @@ tf::Transform                           cam2pos;//  from origin to camera
 // initial tag variable
 int origin = 1;
 int robot  = 2;
+
+// average map to base data
+double xyz[3*3] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+double xyzw[4*3] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
 
 void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
   //ROS_INFO("I hear marker");
@@ -42,8 +47,38 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
     if(aruco_.transforms[i].fiducial_id == origin){
       ROS_INFO("found origin !");
 
-      cam2pos.setOrigin(  tf::Vector3(aruco_.transforms[i].transform.translation.x,aruco_.transforms[i].transform.translation.y,aruco_.transforms[i].transform.translation.z));
-      cam2pos.setRotation( tf::Quaternion(aruco_.transforms[i].transform.rotation.x,aruco_.transforms[i].transform.rotation.y,aruco_.transforms[i].transform.rotation.z ,aruco_.transforms[i].transform.rotation.w));
+      // simple moving average
+      for(int j = 3; j > 1; j--){
+        xyz[3*j-3] = xyz[3*j-3-3];
+        xyz[3*j-2] = xyz[3*j-2-3];
+        xyz[3*j-1] = xyz[3*j-1-3];
+        xyzw[4*j-4] = xyzw[4*j-4-4];
+        xyzw[4*j-3] = xyzw[4*j-3-4];
+        xyzw[4*j-2] = xyzw[4*j-2-4];
+        xyzw[4*j-1] = xyzw[4*j-1-4];
+      }
+      xyz[0] = aruco_.transforms[i].transform.translation.x;
+      xyz[1] = aruco_.transforms[i].transform.translation.y;
+      xyz[2] = aruco_.transforms[i].transform.translation.z;
+      xyzw[0] = aruco_.transforms[i].transform.rotation.x;
+      xyzw[1] = aruco_.transforms[i].transform.rotation.y;
+      xyzw[2] = aruco_.transforms[i].transform.rotation.z;
+      xyzw[3] = aruco_.transforms[i].transform.rotation.w;
+      double temp_x = 0;      double temp_y = 0;      double temp_z = 0;
+      double temp2_x = 0;      double temp2_y = 0;      double temp2_z = 0;      double temp2_w = 0;
+      for(int j = 0; j < 3; j++){
+        temp_x += xyz[3*j];
+        temp_y += xyz[3*j+1];
+        temp_z += xyz[3*j+2];
+        temp2_x += xyzw[4*j];
+        temp2_y += xyzw[4*j+1];
+        temp2_z += xyzw[4*j+2];
+        temp2_w += xyzw[4*j+3];
+      }
+
+
+      cam2pos.setOrigin(  tf::Vector3( temp_x/3 ,temp_y/3,temp_z/3));
+      cam2pos.setRotation( tf::Quaternion(temp2_x/3,temp2_y/3,temp2_z/3,temp2_w/3));
       // from pos to camera then camera to base => pos to base => map origin to base link, let the origin pose be map
       // it become map to base link
       cam2pos = cam2pos.inverse(); // become from origin to camera
