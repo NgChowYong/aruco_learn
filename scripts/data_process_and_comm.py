@@ -142,17 +142,20 @@ def Robot_Data_Process(data, ret):
     else:
         return [ret, None]
 
+    theta = math.atan2(data.poses[0].orientation.y, data.poses[0].orientation.x)
     distance = math.sqrt(x*x + y*y + z*z)
     pose_update = [x, y, theta]
     # return [(ret + "R," + str(distance) + "," + str(theta) + ","), pose_update]
-    return [(ret + "R," + str(x) + "," + str(y) + "," + str(distance) + ","), pose_update]
+    return [(ret + "R," + str(x) + "," + str(y) + "," + str(theta) + "," + str(distance) + ","), pose_update]
 
 
 def Cam_Data_Process(data, ret):
     # get camera position in x y z
     # data.position.x # poses
-    distance = math.sqrt(data.position.x*data.position.x + data.position.y*data.position.y + data.position.z*data.position.z )
-    return ret + "C," + str(data.position.x) + "," + str(data.position.y) + "," + str(distance) + ","
+    # distance = math.sqrt(data.position.x*data.position.x + data.position.y*data.position.y + data.position.z*data.position.z )
+    # theta = math.atan2(data.poses[0].orientation.y, data.poses[0].orientation.x)
+
+    return ret + "C," + str(data.position.x) + "," + str(data.position.y) + ","
 
 
 def Path_Data_Process(data):
