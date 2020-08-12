@@ -27,6 +27,14 @@ def callback(data):
     str_ = str_ + str(data.Camera_Pose.position.y)
     str_ = str_ + ","
     str_ = str_ + str(data.Camera_Pose.position.z)
+    str_ = str_ + ","
+    str_ = str_ + str(data.Camera_Pose.orientation.x)
+    str_ = str_ + ","
+    str_ = str_ + str(data.Camera_Pose.orientation.y)
+    str_ = str_ + ","
+    str_ = str_ + str(data.Camera_Pose.orientation.z)
+    str_ = str_ + ","
+    str_ = str_ + str(data.Camera_Pose.orientation.w)
     str_ = str_ + "\n"
     f.write(str_)
     f.close()
@@ -48,6 +56,20 @@ def callback(data):
         str_ = str_ + str(data.Obstacle_Pose.poses[i].orientation.z)
         str_ = str_ + ","
         str_ = str_ + str(data.Obstacle_Pose.poses[i].orientation.w)
+        str_ = str_ + ","
+        str_ = str_ + str(data.Obstacle_Pose_ori.poses[i].position.x)
+        str_ = str_ + ","
+        str_ = str_ + str(data.Obstacle_Pose_ori.poses[i].position.y)
+        str_ = str_ + ","
+        str_ = str_ + str(data.Obstacle_Pose_ori.poses[i].position.z)
+        str_ = str_ + ","
+        str_ = str_ + str(data.Obstacle_Pose_ori.poses[i].orientation.x)
+        str_ = str_ + ","
+        str_ = str_ + str(data.Obstacle_Pose_ori.poses[i].orientation.y)
+        str_ = str_ + ","
+        str_ = str_ + str(data.Obstacle_Pose_ori.poses[i].orientation.z)
+        str_ = str_ + ","
+        str_ = str_ + str(data.Obstacle_Pose_ori.poses[i].orientation.w)
         str_ = str_ + "\n"
 
     print(str_)
@@ -57,7 +79,7 @@ def callback(data):
 
 if __name__ == '__main__':
     f=open(file1,"a")
-    f.write("ID,x,y,z(position),x,y,z,w(orientation)\n")
+    f.write("ID,xp,yp,zp,xo,yo,zo,wo,xori,yori,zori,xoori,yoori,zoori,woori\n")
     f.close()
     rospy.init_node('SendDataToSTM', anonymous=True)
     rospy.Subscriber("Camera_Data", Camera_Data, callback)

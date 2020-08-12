@@ -1,6 +1,6 @@
 #include "ros/ros.h"
 #include "fiducial_msgs/FiducialTransformArray.h"
-#include "localization/Camera_Data.h"
+#include "localization/Camera_Data_error_error.h"
 #include <tf/transform_broadcaster.h> // publish pose to tf
 #include <tf/transform_listener.h> // listen pose to tf
 #include <iostream>
@@ -12,7 +12,7 @@
 // global variable or handler
 ros::Publisher                          pub;
 fiducial_msgs::FiducialTransformArray   aruco_;
-localization::Camera_Data               camdata;
+localization::Camera_Data_error         camdata;
 tf::StampedTransform                    map2base;
 tf::StampedTransform                    cam2base;
 tf::Transform                           cam2pos;//  from origin to camera
@@ -32,6 +32,7 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
   camdata.Obstacle_Pose.poses.erase(camdata.Obstacle_Pose.poses.begin(), camdata.Obstacle_Pose.poses.end());
   camdata.Obstacle_ID.erase(camdata.Obstacle_ID.begin(), camdata.Obstacle_ID.end());
   camdata.Robot_Pose.poses.erase(camdata.Robot_Pose.poses.begin(), camdata.Robot_Pose.poses.end());
+  camdata.Obstacle_Pose_ori.poses.erase(camdata.Obstacle_Pose_ori.poses.begin(), camdata.Obstacle_Pose_ori.poses.end());
 
   /* 
   * for all tag recognize
@@ -164,15 +165,20 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
         // do rotation from x to origin 
         vect = tempq * vect * tempq_conjugate;
                 
-        //temp.orientation.x = vect.x();
-        //temp.orientation.y = vect.y();
-        //temp.orientation.z = vect.z();
-        //temp.orientation.w = vect.w();
+        temp.orientation.x = vect.x();
+        temp.orientation.y = vect.y();
+        temp.orientation.z = vect.z();
+        temp.orientation.w = vect.w();
 
-        temp.orientation.x = tempa.x();
-        temp.orientation.y = tempa.y();
-        temp.orientation.z = tempa.z();
-        temp.orientation.w = tempa.w();
+        // sense data => obs position from camera
+        geometry_msgs::Pose temp_ori;
+        temp_ori.position.x = xx;
+        temp_ori.position.y = yy;
+        temp_ori.position.z = zz;
+        temp_ori.orientation.x = tempa.x();
+        temp_ori.orientation.y = tempa.y();
+        temp_ori.orientation.z = tempa.z();
+        temp_ori.orientation.w = tempa.w();
 
 	    // from xyz to length and angle
         if(aruco_.transforms[i].fiducial_id == robot){
@@ -181,6 +187,7 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
         }else{
           camdata.Obstacle_ID.push_back(aruco_.transforms[i].fiducial_id);
           camdata.Obstacle_Pose.poses.push_back(temp);
+          camdata.Obstacle_Pose_ori.poses.push_back(temp_ori);
         }
     }
   }
@@ -207,7 +214,7 @@ int main(int argc, char **argv)
   std::cout << "robot: "<< robot <<"\n";
 
 
-  pub = n.advertise<localization::Camera_Data>("Camera_Data", 10);
+  pub = n.advertise<localization::Camera_Data_error>("Camera_Data_error", 10);
   ros::Subscriber                         sub;
   sub = n.subscribe("fiducial_transforms", 2, MarkerCallback);
 

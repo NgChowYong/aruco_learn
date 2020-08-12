@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   Camera_Data.msg
+  Camera_Data_error.msg
 )
 
 generate_messages(
