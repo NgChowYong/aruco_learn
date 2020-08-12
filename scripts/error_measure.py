@@ -6,12 +6,12 @@ import time
 import math
 
 # ros package
-from localization.msg import Camera_Data
+from localization.msg import Camera_Data_error
 import tf
 # from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
-file1 = "measure_obs_far_1.txt"
-file2 = "measure_cam_far_1.txt"
+file1 = "measure_obs_far_2.txt"
+file2 = "measure_cam_far_2.txt"
 
 f=open(file1,"w")
 f.close()
@@ -82,5 +82,5 @@ if __name__ == '__main__':
     f.write("ID,xp,yp,zp,xo,yo,zo,wo,xori,yori,zori,xoori,yoori,zoori,woori\n")
     f.close()
     rospy.init_node('SendDataToSTM', anonymous=True)
-    rospy.Subscriber("Camera_Data", Camera_Data, callback)
+    rospy.Subscriber("Camera_Data", Camera_Data_error, callback)
     rospy.spin()

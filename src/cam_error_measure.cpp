@@ -1,6 +1,6 @@
 #include "ros/ros.h"
 #include "fiducial_msgs/FiducialTransformArray.h"
-#include "localization/Camera_Data_error_error.h"
+#include "localization/Camera_Data_error.h"
 #include <tf/transform_broadcaster.h> // publish pose to tf
 #include <tf/transform_listener.h> // listen pose to tf
 #include <iostream>
@@ -214,7 +214,7 @@ int main(int argc, char **argv)
   std::cout << "robot: "<< robot <<"\n";
 
 
-  pub = n.advertise<localization::Camera_Data_error>("Camera_Data_error", 10);
+  pub = n.advertise<localization::Camera_Data_error>("Camera_Data", 10);
   ros::Subscriber                         sub;
   sub = n.subscribe("fiducial_transforms", 2, MarkerCallback);
 
