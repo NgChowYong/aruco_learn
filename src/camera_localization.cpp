@@ -91,6 +91,11 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
       camdata.Camera_Pose.position.y = cam2pos.getOrigin().y();
       camdata.Camera_Pose.position.z = cam2pos.getOrigin().z();
 
+      camdata.Camera_Pose.orientation.x = cam2pos.getRotation().x();
+      camdata.Camera_Pose.orientation.y = cam2pos.getRotation().y();
+      camdata.Camera_Pose.orientation.z = cam2pos.getRotation().z();
+      camdata.Camera_Pose.orientation.w = cam2pos.getRotation().w();
+
     }else{
         // do update of camera
         // especially for multiple tag read
