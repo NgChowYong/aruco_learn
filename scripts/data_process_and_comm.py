@@ -15,7 +15,8 @@ import tf
 # for reading map only # not sure can be used or not
 import cv2
 
-HOST = '192.168.43.77'  # Standard loopback interface address (localhost)
+# HOST = '192.168.43.77'  # Standard loopback interface address (localhost)
+HOST = '192.168.0.199'  # Standard loopback interface address (localhost)
 PORT = 11223  # Port to listen on (non-privileged ports are > 1023)
 
 
@@ -185,55 +186,101 @@ def callback(data):
     # data_receive = 'PC,R,1,-2,C,11,23,P,2,3,4,5,6,7,E'
     data_receive = ret + "E"
     data_receive_flag = 1
-    print(data_receive)
+    # print(data_receive)
 
 # Send data to STM
 # haven't done update data from STM part
 def wifi_communication():
     global data_receive, data_receive_flag
     global end_flag, main_code
-
+    print('start wifi')
     count = 0
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:  # stream using TCP, afinet is using ipv4
-        s.bind((HOST, PORT))
-        # creating listening port
-        s.listen()
-        # accept from client request/connect
-        conn, addr = s.accept()
-        with conn:
-            print('Connected by', addr)
-            while True:
-                # get data from client
-                data = conn.recv(1024)
-                data = data.decode("utf-8")
-                print(data)
-                if data.find('DK2') == 0:
-                    print('receive from DK2')
-                    # print('sending data : PC,1,2,3')
-                    # if count >= 1:
-                    #     data = "END"
-                    #     data = data.encode("utf-8")
-                    #     # send data to client
-                    #     conn.sendall(data)
-                    # else:
 
-                    # TODO: future used for location update from robot
-                    # main_code.update_pose(pose_update)
+    try:
+        # for python 2.7 used !!
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:  # stream using TCP, afinet is using ipv4
+            s.bind((HOST, PORT))
+            # creating listening port
+            print('listen to port')
+            s.listen()
+            # accept from client request/connect
+            conn, addr = s.accept()
+            with conn:
+                print('Connected by', addr)
+                while True:
+                    # get data from client
+                    data = conn.recv(1024)
+                    data = data.decode("utf-8")
+                    print(data)
+                    if data.find('DK2') == 0:
+                        print('receive from DK2')
+                        # print('sending data : PC,1,2,3')
+                        # if count >= 1:
+                        #     data = "END"
+                        #     data = data.encode("utf-8")
+                        #     # send data to client
+                        #     conn.sendall(data)
+                        # else:
 
-                if data_receive_flag == 1:
-                    data_receive_flag = 0
-                    # data_receive = 'PC,R,1,-2,C,11,23,P,2,3,4,5,6,7,8,9,12,13,E'
-                    data_receive_ = data_receive.encode("utf-8")
+                        # TODO: future used for location update from robot
+                        # main_code.update_pose(pose_update)
 
-                    # send data to client
-                    conn.sendall(data_receive_)
+                    if data_receive_flag == 1:
+                        data_receive_flag = 0
+                        # data_receive = 'PC,R,1,-2,C,11,23,P,2,3,4,5,6,7,8,9,12,13,E'
+                        data_receive_ = data_receive.encode("utf-8")
 
-                    # count = count + 1
+                        # send data to client
+                        conn.sendall(data_receive_)
+                        print('send: ',data_receive_)
+                        # count = count + 1
 
-                # client wil send close message then close
-                if not data or rospy.is_shutdown() or end_flag == 1:
-                    break
+                    # client wil send close message then close
+                    if not data or rospy.is_shutdown() or end_flag == 1:
+                        break        
+        # for python 3 used !!
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:  # stream using TCP, afinet is using ipv4
+            s.bind((HOST, PORT))
+            # creating listening port
+            print('listen to port')
+            s.listen()
+            # accept from client request/connect
+            conn, addr = s.accept()
+            with conn:
+                print('Connected by', addr)
+                while True:
+                    # get data from client
+                    data = conn.recv(1024)
+                    data = data.decode("utf-8")
+                    print(data)
+                    if data.find('DK2') == 0:
+                        print('receive from DK2')
+                        # print('sending data : PC,1,2,3')
+                        # if count >= 1:
+                        #     data = "END"
+                        #     data = data.encode("utf-8")
+                        #     # send data to client
+                        #     conn.sendall(data)
+                        # else:
 
+                        # TODO: future used for location update from robot
+                        # main_code.update_pose(pose_update)
+
+                    if data_receive_flag == 1:
+                        data_receive_flag = 0
+                        # data_receive = 'PC,R,1,-2,C,11,23,P,2,3,4,5,6,7,8,9,12,13,E'
+                        data_receive_ = data_receive.encode("utf-8")
+
+                        # send data to client
+                        conn.sendall(data_receive_)
+                        print('send: ',data_receive_)
+                        # count = count + 1
+
+                    # client wil send close message then close
+                    if not data or rospy.is_shutdown() or end_flag == 1:
+                        break
+    finally:
+        end_flag = 1
 
 if __name__ == '__main__':
     rospy.init_node('SendDataToSTM', anonymous=True)
@@ -243,8 +290,7 @@ if __name__ == '__main__':
     global end_flag, main_code
     end_flag = 0
     main_code = MainThread(1)
-    main_code.run()
-
+    main_code.start()
     # run continuous communication with DK2
     wifi_communication()
 
