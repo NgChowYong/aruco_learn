@@ -4,7 +4,7 @@
 <include file="$(find localization)/launch/aruco_detect.launch" />
 
 <param name="origin_id"    value="10"/>
-<param name="robot_id"    value="1"/>
+<param name="robot_id"    value="21"/>
 <!--node pkg="localization" type="localization" name="cam_origin" output="screen" /-->
 
 </launch>
