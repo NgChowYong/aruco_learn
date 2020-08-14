@@ -105,6 +105,7 @@ class MainThread(threading.Thread):
                 temp = temp + self.new_path[i * 2], "," + self.new_path[i * 2 + 1] + ","
             return ret + temp
         else:
+            # round( ? *1000)
             return ret
 
     def Astar(self):
@@ -147,7 +148,7 @@ def Robot_Data_Process(data, ret):
     distance = math.sqrt(x*x + y*y + z*z)
     pose_update = [x, y, theta]
     # return [(ret + "R," + str(distance) + "," + str(theta) + ","), pose_update]
-    return [(ret + "R," + str(x) + "," + str(y) + "," + str(theta) + "," + str(distance) + ","), pose_update]
+    return [(ret + "R," + str(round(x*1000)) + "," + str(y*1000)) + "," + str(round(theta*1000)) + "," + str(round(distance*1000)) + ","), pose_update]
 
 
 def Cam_Data_Process(data, ret):
@@ -156,7 +157,7 @@ def Cam_Data_Process(data, ret):
     # distance = math.sqrt(data.position.x*data.position.x + data.position.y*data.position.y + data.position.z*data.position.z )
     # theta = math.atan2(data.poses[0].orientation.y, data.poses[0].orientation.x)
 
-    return ret + "C," + str(data.position.x) + "," + str(data.position.y) + ","
+    return ret + "C," + str(round(data.position.x*1000)) + "," + str(round(data.position.y*1000)) + ","
 
 
 def Path_Data_Process(data):
