@@ -209,9 +209,9 @@ def wifi_communication():
         print('Connected by', addr)
         while True:
             # get data from client
+            print('collect wifi data')
             data = conn.recv(1024)
             data = data.decode("utf-8")
-            print(data)
             if data.find('DK2') == 0:
                 print('receive from DK2')
                 # print('sending data : PC,1,2,3')
@@ -234,6 +234,11 @@ def wifi_communication():
                 conn.sendall(data_receive_)
                 print('send: ',data_receive_)
                 # count = count + 1
+            else:
+                # send data to client
+                bypass_data = 'PC,E'
+                bypass_data = bypass_data.encode("utf-8")
+                conn.sendall(bypass_data)
 
             # client wil send close message then close
             if not data or rospy.is_shutdown() or end_flag == 1:
