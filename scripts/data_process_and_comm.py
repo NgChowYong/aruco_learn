@@ -148,7 +148,8 @@ def Robot_Data_Process(data, ret):
     distance = math.sqrt(x*x + y*y + z*z)
     pose_update = [x, y, theta]
     # return [(ret + "R," + str(distance) + "," + str(theta) + ","), pose_update]
-    return [(ret + "R," + str(round(x*1000)) + "," + str(y*1000)) + "," + str(round(theta*1000)) + "," + str(round(distance*1000)) + ","), pose_update]
+    #return [(ret + "R," + str(round(x*1000)) + "," + str(round(y*1000)) + "," + str(round(theta*1000)) + "," + str(round(distance*1000)) + ","), pose_update]
+    return [(ret + "R," + str(int(x*1000)) + "," + str(int(y*1000)) + "," + str(int(theta*1000)) + "," + str(int(distance*1000)) + ","), pose_update]
 
 
 def Cam_Data_Process(data, ret):
@@ -157,7 +158,8 @@ def Cam_Data_Process(data, ret):
     # distance = math.sqrt(data.position.x*data.position.x + data.position.y*data.position.y + data.position.z*data.position.z )
     # theta = math.atan2(data.poses[0].orientation.y, data.poses[0].orientation.x)
 
-    return ret + "C," + str(round(data.position.x*1000)) + "," + str(round(data.position.y*1000)) + ","
+    #return ret + "C," + str(round(data.position.x*1000)) + "," + str(round(data.position.y*1000)) + ","
+    return ret + "C," + str(int(data.position.x*1000)) + "," + str(int(data.position.y*1000)) + ","
 
 
 def Path_Data_Process(data):
@@ -194,6 +196,7 @@ def callback(data):
 def wifi_communication():
     global data_receive, data_receive_flag
     global end_flag, main_code
+    global path_file, sense_file
     print('start wifi')
     count = 0
 
@@ -214,6 +217,9 @@ def wifi_communication():
             data = data.decode("utf-8")
             if data.find('DK2') == 0:
                 print('receive from DK2')
+                print(data)
+                path_file.write(data)
+
                 # print('sending data : PC,1,2,3')
                 # if count >= 1:
                 #     data = "END"
@@ -228,6 +234,7 @@ def wifi_communication():
             if data_receive_flag == 1:
                 data_receive_flag = 0
                 # data_receive = 'PC,R,1,-2,C,11,23,P,2,3,4,5,6,7,8,9,12,13,E'
+                sense_file.write(data_receive)
                 data_receive_ = data_receive.encode("utf-8")
 
                 # send data to client
@@ -286,6 +293,12 @@ def wifi_communication():
         #                 break
     finally:
         end_flag = 1
+        path_file.close()
+        sense_file.close()
+        data = "END"
+        data = data.encode("utf-8")
+        # send data to client
+        conn.sendall(data)
 
 if __name__ == '__main__':
     rospy.init_node('SendDataToSTM', anonymous=True)
@@ -294,8 +307,15 @@ if __name__ == '__main__':
     # run main code
     global end_flag, main_code
     end_flag = 0
+    main_code = 0
     main_code = MainThread(1)
     main_code.start()
+
+    # file to save path data
+    global path_file, sense_file
+    path_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_path.txt","w")
+    sense_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_sense.txt","w")
+
     # run continuous communication with DK2
     wifi_communication()
 
