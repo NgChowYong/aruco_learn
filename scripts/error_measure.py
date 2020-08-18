@@ -10,8 +10,8 @@ from localization.msg import Camera_Data_error
 import tf
 # from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
-file1 = "measure_obs_a_2.txt"
-file2 = "measure_cam_a_2.txt"
+file1 = "measure_obs_a_4.txt"
+file2 = "measure_cam_a_4.txt"
 
 f=open(file1,"w")
 f.close()
