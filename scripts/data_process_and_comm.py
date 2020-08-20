@@ -219,6 +219,7 @@ def wifi_communication():
                 print('receive from DK2')
                 print(data)
                 path_file.write(data)
+                path_file.write("\n")
 
                 # print('sending data : PC,1,2,3')
                 # if count >= 1:
