@@ -11,9 +11,9 @@ from sensor_msgs.msg import Imu
 import tf
 # from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
-file1 = "measure_obs_t9.txt"
-file2 = "measure_cam_t9.txt"
-file3 = "measure_acc_t9.txt"
+file1 = "measure_obs_new.txt"
+file2 = "measure_cam_new.txt"
+file3 = "measure_acc_new.txt"
 
 f=open(file1,"w")
 f.close()
