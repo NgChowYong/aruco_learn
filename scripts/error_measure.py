@@ -7,11 +7,13 @@ import math
 
 # ros package
 from localization.msg import Camera_Data_error
+from sensor_msgs.msg import Imu
 import tf
 # from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
-file1 = "measure_obs_a_4.txt"
-file2 = "measure_cam_a_4.txt"
+file1 = "measure_obs_new.txt"
+file2 = "measure_cam_new.txt"
+file3 = "measure_acc_new.txt"
 
 f=open(file1,"w")
 f.close()
@@ -76,6 +78,11 @@ def callback(data):
     f.write(str_)
     f.close()
 
+def callback2(data):
+    f=open(file3,"a")
+    str_2 = str(data.linear_acceleration.x) + " " + str(data.linear_acceleration.y) + " " + str(data.linear_acceleration.z) + " \n"
+    f.write(str_2)
+    f.close()
 
 if __name__ == '__main__':
     f=open(file1,"a")
@@ -83,4 +90,5 @@ if __name__ == '__main__':
     f.close()
     rospy.init_node('SendDataToSTM', anonymous=True)
     rospy.Subscriber("Camera_Data", Camera_Data_error, callback)
+    rospy.Subscriber("camera/accel/sample", Imu, callback2)
     rospy.spin()
