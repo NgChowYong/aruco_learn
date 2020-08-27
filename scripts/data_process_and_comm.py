@@ -113,7 +113,7 @@ class MainThread(threading.Thread):
 
 
 # TODO: need to calculate distance and angle in 2D
-def Robot_Data_Process(data, ret):
+def Robot_Data_Process(data, Camera_Pose, ret):
     # calculate length and angle of robot
     # x,y, theta
     x = 0
@@ -145,7 +145,10 @@ def Robot_Data_Process(data, ret):
         return [ret, None]
 
     theta = math.atan2(data.poses[0].orientation.y, data.poses[0].orientation.x)
-    distance = math.sqrt(x*x + y*y + z*z)
+    camx = Camera_Pose.position.x
+    camy = Camera_Pose.position.y
+    camz = Camera_Pose.position.z
+    distance = math.sqrt(x*x + y*y + z*z) + math.sqrt(camx*camx + camy*camy + camz*camz) 
     pose_update = [x, y, theta]
     # return [(ret + "R," + str(distance) + "," + str(theta) + ","), pose_update]
     #return [(ret + "R," + str(round(x*1000)) + "," + str(round(y*1000)) + "," + str(round(theta*1000)) + "," + str(round(distance*1000)) + ","), pose_update]
@@ -163,7 +166,7 @@ def Cam_Data_Process(data, ret):
 
 
 def Path_Data_Process(data):
-    return ret + "P,2,3,3,4,"
+    return ret + "P,2,3,3,4,1234"
 
 
 # callback function for rospy to used
@@ -176,7 +179,7 @@ def callback(data):
     ret = "PC,"
 
     # robot
-    ret, pose_update = Robot_Data_Process(data.Robot_Pose, ret)
+    ret, pose_update = Robot_Data_Process(data.Robot_Pose, data.Camera_Pose, ret)
     main_code.update_pose(pose_update)
 
     # camera pose
@@ -186,7 +189,7 @@ def callback(data):
     main_code.update_map(data)
     ret = main_code.update_path(ret)
 
-    # data_receive = 'PC,R,1,-2,C,11,23,P,2,3,4,5,6,7,E'
+    # data_receive = 'PC,R,1,-2,C,11,23,P,2,3,4,5,6,7,1234,E'
     data_receive = ret + "E"
     data_receive_flag = 1
     # print(data_receive)
