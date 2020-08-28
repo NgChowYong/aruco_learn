@@ -23,6 +23,11 @@ add_message_files(
   Camera_Data_error.msg
 )
 
+add_service_files(
+  FILES
+  corrrection_service.srv
+)
+
 generate_messages(
   DEPENDENCIES
   geometry_msgs
