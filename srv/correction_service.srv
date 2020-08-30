@@ -2,6 +2,4 @@ int32 Size
 float32[] Measure
 float32[] Actual
 ---
-int32 M
-int32 N
 float32[] Matrix

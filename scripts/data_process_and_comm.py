@@ -6,11 +6,12 @@ import socket
 import threading
 import time
 import math
+import numpy as np
 
 # ros package
 from localization.msg import Camera_Data
 import tf
-# from tf.transformations import euler_from_quaternion, quaternion_from_euler
+from localization.srv import *
 
 # for reading map only # not sure can be used or not
 import cv2
@@ -123,15 +124,16 @@ def Robot_Data_Process(data, Camera_Pose, ret):
     l = len(data.poses)
     if l > 1:
         # TODO : modify this code here to use multiple tag
-        for i in range(l):
-            # do find center
-            # do estimation
-            x += data.poses[i].position.x
-            y += data.poses[i].position.y
-            # do rotation getting out
-        x = x / len(data)
-        y = y / len(data)
-        # x = x/len(data)
+##        for i in range(l):
+##            # do find center
+##            # do estimation
+##            x += data.poses[i].position.x
+##            y += data.poses[i].position.y
+##            # do rotation getting out
+##        x = x / len(data)
+##        y = y / len(data)
+##        # x = x/len(data)
+        pass
 
     elif l == 1:
         x = data.poses[0].position.x
@@ -168,13 +170,43 @@ def Cam_Data_Process(data, ret):
 def Path_Data_Process(data):
     return ret + "P,2,3,3,4,1234"
 
+def Data_Correction(data):
+    global Matrix
+    Data_Measure = np.zeros([4,1])
+    for i in range(len(data.Obstacle_Pose.poses)):
+        Data_Measure[0][0] = data.Obstacle_Pose.poses.position.x
+        Data_Measure[1][0] = data.Obstacle_Pose.poses.position.y
+        Data_Measure[2][0] = data.Obstacle_Pose.poses.position.z
+        Data_Measure[3][0] = 1
+        result = Matrix.dot(Data_Measure)
+        data.Obstacle_Pose.poses.x = result[0][0]
+        data.Obstacle_Pose.poses.y = result[1][0]
+        data.Obstacle_Pose.poses.z = result[2][0]
 
 # callback function for rospy to used
 def callback(data):
     global data_receive, data_receive_flag
     global main_code
     # data process
-    # data update and send
+
+    global cali_tag
+    global cali_tag_no
+    global cali_flag
+
+    if cali_flag == 0:
+        # do data collection
+        for i in range(len(data.Obstacle_Pose.poses)):
+            for j in range(len(cali_tag_no)):
+                if data.Obstacle_ID[i] == cali_tag_no[j]:
+                    cali_tag[j].append(data.Obstacle_Pose.poses[i].position)
+    elif cali_flag == 1:
+        # do Matrix calculation n stop collecting data
+        pass
+    
+    elif cali_flag == 2:
+        # TODO: do correction to all data     
+        data = Data_Correction(data)
+
     # initial word sending
     ret = "PC,"
 
@@ -304,10 +336,103 @@ def wifi_communication():
         # send data to client
         conn.sendall(data)
 
+def plane_calibration():
+    global cali_tag
+    global cali_tag_no
+    global cali_flag
+    global Matrix
+    # collecting data
+    cali_flag = 0
+
+    while True:
+        break_flag = 0
+        for i in range(len(cali_tag_no)):
+            if len(cali_tag[i]) < 100:
+                break_flag = 1
+        # small amount of data, remain collecting
+        if break_flag == 1:
+            cali_flag = 0
+            
+        # enough amount of data, stop collecting data
+        elif  break_flag == 0:
+            cali_flag = 1
+            # can check variance ?
+            break
+
+    Measure_Data = []
+    # calc mean of each data
+    for i in range(len(cali_tag_no)):
+        meanx = 0
+        meany = 0
+        meanz = 0
+        l = len(cali_tag[i])
+        for j in range(l):
+            meanx += cali_tag[i].x
+            meany += cali_tag[i].y
+            meanz += cali_tag[i].z
+        meanx = meanx/l
+        meany = meany/l
+        meanz = meanz/l
+        Measure_Data.append(meanx)
+        Measure_Data.append(meany)
+        Measure_Data.append(meanz)
+    
+    # get service request
+    req = correction_service.Request()
+    req.Measure = Measure_Data
+    req.Size = 4
+    Actual = []
+    Actual.append(2.6)
+    Actual.append(98.6)
+    Actual.append(0)
+    Actual.append(2.6)
+    Actual.append(86.9)
+    Actual.append(0)
+    Actual.append(54.1)
+    Actual.append(99.6)
+    Actual.append(0)
+    Actual.append(54.3622)
+    Actual.append(88.16616)
+    Actual.append(0)
+    req.Actual = Actual
+
+    # do calibration service to get calibration matrix
+    rospy.wait_for_service('correction_service')
+    try:
+        correction_service_ = rospy.ServiceProxy('correction_service', correction_service)
+        resp = correction_service_(req)
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)
+        resp = []
+
+    Matrix = np.zeros([3, 4])
+    for i in range(3):
+        for j in range(4):
+            Matrix[i][j] = x[i*4+j]
+    #print(M)
+    cali_flag = 2
+    
+    
 if __name__ == '__main__':
     rospy.init_node('SendDataToSTM', anonymous=True)
     rospy.Subscriber("Camera_Data", Camera_Data, callback)
 
+    global cali_tag
+    global cali_tag_no
+    global cali_flag
+    cali_flag = 0
+    cali_tag_no = []
+    cali_tag_no.append(13)
+    cali_tag_no.append(14)
+    cali_tag_no.append(15)
+    cali_tag_no.append(16)
+    cali_tag = []
+    cali_tag.append([])
+    cali_tag.append([])
+    cali_tag.append([])
+    cali_tag.append([])
+
+    
     # run main code
     global end_flag, main_code
     end_flag = 0
@@ -320,6 +445,9 @@ if __name__ == '__main__':
     path_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_path.txt","w")
     sense_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_sense.txt","w")
 
+    # run and wait for calibration first for localization
+    plane_calibration()
+
     # run continuous communication with DK2
     wifi_communication()
 
@@ -327,3 +455,11 @@ if __name__ == '__main__':
     # TODO: end flag trigger for 3 threads
     end_flag = 1
     # rospy.spin()
+
+##    rospy.wait_for_service('add_two_ints')
+##    try:
+##        add_two_ints = rospy.ServiceProxy('add_two_ints', AddTwoInts)
+##        resp1 = add_two_ints(x, y)
+##        return resp1.sum
+##    except rospy.ServiceException as e:
+##        print("Service call failed: %s"%e)

@@ -41,6 +41,9 @@ catkin_package(
   CATKIN_DEPENDS message_runtime
 )
 
+catkin_install_python(PROGRAMS scripts/correction_service.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations

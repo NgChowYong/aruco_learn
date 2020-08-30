@@ -88,7 +88,7 @@ def handle_correction_service(req):
     return ret
 
 if __name__ == "__main__":
-    rospy.init_node('correction_service')
+    rospy.init_node('correction_service_server')
     s = rospy.Service('correction_service', correction_service, handle_correction_service)
     print("Ready to do correction")
     rospy.spin()
