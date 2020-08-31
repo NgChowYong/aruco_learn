@@ -173,15 +173,26 @@ def Path_Data_Process(data):
 def Data_Correction(data):
     global Matrix
     Data_Measure = np.zeros([4,1])
+    # obstacle position correction
     for i in range(len(data.Obstacle_Pose.poses)):
-        Data_Measure[0][0] = data.Obstacle_Pose.poses.position.x
-        Data_Measure[1][0] = data.Obstacle_Pose.poses.position.y
-        Data_Measure[2][0] = data.Obstacle_Pose.poses.position.z
+        Data_Measure[0][0] = data.Obstacle_Pose.poses[i].position.x
+        Data_Measure[1][0] = data.Obstacle_Pose.poses[i].position.y
+        Data_Measure[2][0] = data.Obstacle_Pose.poses[i].position.z
         Data_Measure[3][0] = 1
         result = Matrix.dot(Data_Measure)
-        data.Obstacle_Pose.poses.x = result[0][0]
-        data.Obstacle_Pose.poses.y = result[1][0]
-        data.Obstacle_Pose.poses.z = result[2][0]
+        data.Obstacle_Pose.poses[i].position.x = result[0][0]
+        data.Obstacle_Pose.poses[i].position.y = result[1][0]
+        data.Obstacle_Pose.poses[i].position.z = result[2][0]
+    
+    # robot position correction
+    Data_Measure[0][0] = data.Robot_Pose.poses[0].position.x
+    Data_Measure[1][0] = data.Robot_Pose.poses[0].position.y
+    Data_Measure[2][0] = data.Robot_Pose.poses[0].position.z
+    Data_Measure[3][0] = 1
+    result = Matrix.dot(Data_Measure)
+    data.Robot_Pose.poses[0].position.x = result[0][0]
+    data.Robot_Pose.poses[0].position.y = result[1][0]
+    data.Robot_Pose.poses[0].position.z = result[2][0]
 
 # callback function for rospy to used
 def callback(data):
@@ -241,7 +252,16 @@ def wifi_communication():
         s.bind((HOST, PORT))
         # creating listening port
         print('listen to port')
-        s.listen(5)
+        no = 0
+        while True:
+            try:
+                no = no + 1
+                print('listening'+'.'*no, end="\r")
+                s.listen(5)
+                break
+            except e:
+                pass
+            
         # accept from client request/connect
         conn, addr = s.accept()
         print('Connected by', addr)
@@ -382,18 +402,16 @@ def plane_calibration():
     req.Measure = Measure_Data
     req.Size = 4
     Actual = []
-    Actual.append(2.6)
-    Actual.append(98.6)
-    Actual.append(0)
-    Actual.append(2.6)
-    Actual.append(86.9)
-    Actual.append(0)
-    Actual.append(54.1)
-    Actual.append(99.6)
-    Actual.append(0)
-    Actual.append(54.3622)
-    Actual.append(88.16616)
-    Actual.append(0)
+    f = open("coordinate.txt")
+    for i in f:
+        if i[-1] == '\n':
+            i = i[:-1]
+        i = i.split(',')
+        for j in cali_tag_no:
+            if j == i[0]:
+                Actual.append(i[1])
+                Actual.append(i[2])
+                Actual.append(i[3])
     req.Actual = Actual
 
     # do calibration service to get calibration matrix
@@ -452,14 +470,6 @@ if __name__ == '__main__':
     wifi_communication()
 
     # flag for closing main code
-    # TODO: end flag trigger for 3 threads
     end_flag = 1
     # rospy.spin()
 
-##    rospy.wait_for_service('add_two_ints')
-##    try:
-##        add_two_ints = rospy.ServiceProxy('add_two_ints', AddTwoInts)
-##        resp1 = add_two_ints(x, y)
-##        return resp1.sum
-##    except rospy.ServiceException as e:
-##        print("Service call failed: %s"%e)
