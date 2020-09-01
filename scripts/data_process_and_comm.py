@@ -502,6 +502,5 @@ if __name__ == '__main__':
 
     # flag for closing main code
     end_flag = 1
-    correction_file.close()
     # rospy.spin()
 
