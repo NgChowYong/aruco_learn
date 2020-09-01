@@ -1,23 +1,25 @@
-from localization.srv import correction_service,correction_serviceResponse
+#!/usr/bin/python2
+
 import rospy
+from localization.srv import correction_service,correction_serviceResponse
 import numpy as np
 
 def handle_correction_service(req):
     n = 4
-    m = req.size
-    Actual_Data = np.zeros([m, 3])
-    Measure_Data = np.zeros([m, 3])
+    m = req.Size
+    Actual_Data = []
+    Measure_Data = [] #np.zeros([m, 3])
     print("Collect Data... ")
     for i in range(m):
         temp = []
         for j in range(3):
-            temp.append(req.Actual[i*3+j])        
+            temp.append(req.Actual[i*3+j])
         Actual_Data.append(temp)
-    
+
     for i in range(m):
         temp = []
         for j in range(3):
-            temp.append(req.Measure[i*3+j])        
+            temp.append(req.Measure[i*3+j])
         Measure_Data.append(temp)
 
     Actual_Data = np.array(Actual_Data)
@@ -81,14 +83,14 @@ def handle_correction_service(req):
     ##print('using cv2 method : \n',M.dot(point1))
     ##point1 = np.vstack((point1, np.ones((1, m))))
     ##print('using my method : \n',M2.dot(point1))
-
-    ret = AddTwoIntsResponse()
+    ret = correction_serviceResponse()
     ret.Matrix = x
-    
+
     return ret
 
 if __name__ == "__main__":
     rospy.init_node('correction_service_server')
+    print("start build service server")
     s = rospy.Service('correction_service', correction_service, handle_correction_service)
     print("Ready to do correction")
     rospy.spin()

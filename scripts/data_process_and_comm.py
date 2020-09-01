@@ -172,27 +172,46 @@ def Path_Data_Process(data):
 
 def Data_Correction(data):
     global Matrix
+    global correction_file
     Data_Measure = np.zeros([4,1])
     # obstacle position correction
     for i in range(len(data.Obstacle_Pose.poses)):
+        correction_file.write("b,")
         Data_Measure[0][0] = data.Obstacle_Pose.poses[i].position.x
         Data_Measure[1][0] = data.Obstacle_Pose.poses[i].position.y
         Data_Measure[2][0] = data.Obstacle_Pose.poses[i].position.z
+        correction_file.write(str(Data_Measure[0][0])+",")
+        correction_file.write(str(Data_Measure[1][0])+",")
+        correction_file.write(str(Data_Measure[2][0])+"\n")
         Data_Measure[3][0] = 1
         result = Matrix.dot(Data_Measure)
         data.Obstacle_Pose.poses[i].position.x = result[0][0]
         data.Obstacle_Pose.poses[i].position.y = result[1][0]
         data.Obstacle_Pose.poses[i].position.z = result[2][0]
-    
+        correction_file.write("a,")
+        correction_file.write(str(result[0][0])+",")
+        correction_file.write(str(result[1][0])+",")
+        correction_file.write(str(result[2][0])+"\n")
+
     # robot position correction
-    Data_Measure[0][0] = data.Robot_Pose.poses[0].position.x
-    Data_Measure[1][0] = data.Robot_Pose.poses[0].position.y
-    Data_Measure[2][0] = data.Robot_Pose.poses[0].position.z
-    Data_Measure[3][0] = 1
-    result = Matrix.dot(Data_Measure)
-    data.Robot_Pose.poses[0].position.x = result[0][0]
-    data.Robot_Pose.poses[0].position.y = result[1][0]
-    data.Robot_Pose.poses[0].position.z = result[2][0]
+    if len(data.Robot_Pose.poses) != 0:
+        correction_file.write("b,")
+        Data_Measure[0][0] = data.Robot_Pose.poses[0].position.x
+        Data_Measure[1][0] = data.Robot_Pose.poses[0].position.y
+        Data_Measure[2][0] = data.Robot_Pose.poses[0].position.z
+        correction_file.write(str(Data_Measure[0][0])+",")
+        correction_file.write(str(Data_Measure[1][0])+",")
+        correction_file.write(str(Data_Measure[2][0])+"\n")
+        Data_Measure[3][0] = 1
+        result = Matrix.dot(Data_Measure)
+        data.Robot_Pose.poses[0].position.x = result[0][0]
+        data.Robot_Pose.poses[0].position.y = result[1][0]
+        data.Robot_Pose.poses[0].position.z = result[2][0]
+        correction_file.write("a,")
+        correction_file.write(str(result[0][0])+",")
+        correction_file.write(str(result[1][0])+",")
+        correction_file.write(str(result[2][0])+"\n")
+    return data
 
 # callback function for rospy to used
 def callback(data):
@@ -213,9 +232,9 @@ def callback(data):
     elif cali_flag == 1:
         # do Matrix calculation n stop collecting data
         pass
-    
+
     elif cali_flag == 2:
-        # TODO: do correction to all data     
+        # TODO: do correction to all data
         data = Data_Correction(data)
 
     # initial word sending
@@ -252,18 +271,16 @@ def wifi_communication():
         s.bind((HOST, PORT))
         # creating listening port
         print('listen to port')
-        no = 0
-        while True:
-            try:
-                no = no + 1
-                print('listening'+'.'*no, end="\r")
-                s.listen(5)
-                break
-            except e:
-                pass
-            
+        r = s.listen(5)
+        print('r: ',r)
+        if r == None:
+            while r != None:
+                r = s.listen(5)
+                if end_flag == 1:
+                    break
         # accept from client request/connect
         conn, addr = s.accept()
+
         print('Connected by', addr)
         while True:
             # get data from client
@@ -361,6 +378,7 @@ def plane_calibration():
     global cali_tag_no
     global cali_flag
     global Matrix
+    global end_flag
     # collecting data
     cali_flag = 0
 
@@ -369,15 +387,23 @@ def plane_calibration():
         for i in range(len(cali_tag_no)):
             if len(cali_tag[i]) < 100:
                 break_flag = 1
+                print('collecting...')
+                print(cali_tag_no[i],',',len(cali_tag[i]))
+
         # small amount of data, remain collecting
         if break_flag == 1:
             cali_flag = 0
-            
+
         # enough amount of data, stop collecting data
         elif  break_flag == 0:
             cali_flag = 1
             # can check variance ?
             break
+
+        if end_flag == 1:
+            return 0
+
+    print('start calculating ')
 
     Measure_Data = []
     # calc mean of each data
@@ -387,50 +413,54 @@ def plane_calibration():
         meanz = 0
         l = len(cali_tag[i])
         for j in range(l):
-            meanx += cali_tag[i].x
-            meany += cali_tag[i].y
-            meanz += cali_tag[i].z
+            meanx += cali_tag[i][j].x
+            meany += cali_tag[i][j].y
+            meanz += cali_tag[i][j].z
         meanx = meanx/l
         meany = meany/l
         meanz = meanz/l
         Measure_Data.append(meanx)
         Measure_Data.append(meany)
         Measure_Data.append(meanz)
-    
+
     # get service request
-    req = correction_service.Request()
+    req = correction_serviceRequest()
     req.Measure = Measure_Data
     req.Size = 4
     Actual = []
-    f = open("coordinate.txt")
+    f = open("/home/icmems/WALLE_project/catkin_ws/src/localization/scripts/coordinate.txt")
     for i in f:
         if i[-1] == '\n':
             i = i[:-1]
         i = i.split(',')
         for j in cali_tag_no:
-            if j == i[0]:
-                Actual.append(i[1])
-                Actual.append(i[2])
-                Actual.append(i[3])
+            #print(i)
+            #print(j)
+            if str(j) == i[0]:
+                Actual.append(float(i[1]))
+                Actual.append(float(i[2]))
+                Actual.append(float(i[3]))
     req.Actual = Actual
+    print('get actual data from file done, start call service')
 
     # do calibration service to get calibration matrix
     rospy.wait_for_service('correction_service')
     try:
         correction_service_ = rospy.ServiceProxy('correction_service', correction_service)
         resp = correction_service_(req)
+        resp = resp.Matrix
     except rospy.ServiceException as e:
         print("Service call failed: %s"%e)
-        resp = []
+        resp = np.zeros([12,1])
 
     Matrix = np.zeros([3, 4])
     for i in range(3):
         for j in range(4):
-            Matrix[i][j] = x[i*4+j]
+            Matrix[i][j] = resp[i*4+j]
     #print(M)
     cali_flag = 2
-    
-    
+    print('done correction calculation')
+
 if __name__ == '__main__':
     rospy.init_node('SendDataToSTM', anonymous=True)
     rospy.Subscriber("Camera_Data", Camera_Data, callback)
@@ -450,7 +480,7 @@ if __name__ == '__main__':
     cali_tag.append([])
     cali_tag.append([])
 
-    
+
     # run main code
     global end_flag, main_code
     end_flag = 0
@@ -459,9 +489,10 @@ if __name__ == '__main__':
     main_code.start()
 
     # file to save path data
-    global path_file, sense_file
+    global path_file, sense_file,correction_file
     path_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_path.txt","w")
     sense_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_sense.txt","w")
+    correction_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_corrrection.txt","w")
 
     # run and wait for calibration first for localization
     plane_calibration()
