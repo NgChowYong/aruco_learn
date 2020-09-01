@@ -176,7 +176,7 @@ def Data_Correction(data):
     Data_Measure = np.zeros([4,1])
     # obstacle position correction
     for i in range(len(data.Obstacle_Pose.poses)):
-        correction_file.write("b,")
+        correction_file.write("b,"+str(data.Obstacle_ID[i])+",")
         Data_Measure[0][0] = data.Obstacle_Pose.poses[i].position.x
         Data_Measure[1][0] = data.Obstacle_Pose.poses[i].position.y
         Data_Measure[2][0] = data.Obstacle_Pose.poses[i].position.z
@@ -188,14 +188,14 @@ def Data_Correction(data):
         data.Obstacle_Pose.poses[i].position.x = result[0][0]
         data.Obstacle_Pose.poses[i].position.y = result[1][0]
         data.Obstacle_Pose.poses[i].position.z = result[2][0]
-        correction_file.write("a,")
+        correction_file.write("a,"+str(data.Obstacle_ID[i])+",")
         correction_file.write(str(result[0][0])+",")
         correction_file.write(str(result[1][0])+",")
         correction_file.write(str(result[2][0])+"\n")
 
     # robot position correction
     if len(data.Robot_Pose.poses) != 0:
-        correction_file.write("b,")
+        correction_file.write("b,"+str(data.Robot_ID)+",")
         Data_Measure[0][0] = data.Robot_Pose.poses[0].position.x
         Data_Measure[1][0] = data.Robot_Pose.poses[0].position.y
         Data_Measure[2][0] = data.Robot_Pose.poses[0].position.z
@@ -207,7 +207,7 @@ def Data_Correction(data):
         data.Robot_Pose.poses[0].position.x = result[0][0]
         data.Robot_Pose.poses[0].position.y = result[1][0]
         data.Robot_Pose.poses[0].position.z = result[2][0]
-        correction_file.write("a,")
+        correction_file.write("a,"+str(data.Robot_ID)+",")
         correction_file.write(str(result[0][0])+",")
         correction_file.write(str(result[1][0])+",")
         correction_file.write(str(result[2][0])+"\n")
@@ -502,5 +502,6 @@ if __name__ == '__main__':
 
     # flag for closing main code
     end_flag = 1
+    correction_file.close()
     # rospy.spin()
 
