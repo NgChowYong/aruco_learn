@@ -472,8 +472,8 @@ if __name__ == '__main__':
     cali_tag_no = []
     cali_tag_no.append(13)
     cali_tag_no.append(14)
-    cali_tag_no.append(15)
-    cali_tag_no.append(16)
+    cali_tag_no.append(18)
+    cali_tag_no.append(20)
     cali_tag = []
     cali_tag.append([])
     cali_tag.append([])
