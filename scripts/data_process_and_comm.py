@@ -472,8 +472,8 @@ if __name__ == '__main__':
     cali_tag_no = []
     cali_tag_no.append(13)
     cali_tag_no.append(14)
-    cali_tag_no.append(18)
-    cali_tag_no.append(20)
+    cali_tag_no.append(15)
+    cali_tag_no.append(16)
     cali_tag = []
     cali_tag.append([])
     cali_tag.append([])
@@ -492,7 +492,7 @@ if __name__ == '__main__':
     global path_file, sense_file,correction_file
     path_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_path.txt","w")
     sense_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_sense.txt","w")
-    correction_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_corrrection.txt","w")
+    correction_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_corrrection3.txt","w")
 
     # run and wait for calibration first for localization
     plane_calibration()
