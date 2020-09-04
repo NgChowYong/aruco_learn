@@ -174,43 +174,47 @@ def Data_Correction(data):
     global Matrix
     global correction_file
     Data_Measure = np.zeros([4,1])
+    correction_file_ = open(correction_file,"a")
     # obstacle position correction
     for i in range(len(data.Obstacle_Pose.poses)):
-        correction_file.write("b,"+str(data.Obstacle_ID[i])+",")
+        correction_file_.write("b,"+str(data.Obstacle_ID[i])+",")
         Data_Measure[0][0] = data.Obstacle_Pose.poses[i].position.x
         Data_Measure[1][0] = data.Obstacle_Pose.poses[i].position.y
         Data_Measure[2][0] = data.Obstacle_Pose.poses[i].position.z
-        correction_file.write(str(Data_Measure[0][0])+",")
-        correction_file.write(str(Data_Measure[1][0])+",")
-        correction_file.write(str(Data_Measure[2][0])+"\n")
+        correction_file_.write(str(Data_Measure[0][0])+",")
+        correction_file_.write(str(Data_Measure[1][0])+",")
+        correction_file_.write(str(Data_Measure[2][0])+"\n")
         Data_Measure[3][0] = 1
         result = Matrix.dot(Data_Measure)
         data.Obstacle_Pose.poses[i].position.x = result[0][0]
         data.Obstacle_Pose.poses[i].position.y = result[1][0]
         data.Obstacle_Pose.poses[i].position.z = result[2][0]
-        correction_file.write("a,"+str(data.Obstacle_ID[i])+",")
-        correction_file.write(str(result[0][0])+",")
-        correction_file.write(str(result[1][0])+",")
-        correction_file.write(str(result[2][0])+"\n")
+        correction_file_.write("a,"+str(data.Obstacle_ID[i])+",")
+        correction_file_.write(str(result[0][0])+",")
+        correction_file_.write(str(result[1][0])+",")
+        correction_file_.write(str(result[2][0])+"\n")
 
     # robot position correction
     if len(data.Robot_Pose.poses) != 0:
-        correction_file.write("b,"+str(data.Robot_ID)+",")
+        correction_file_.write("b,"+str(data.Robot_ID)+",")
         Data_Measure[0][0] = data.Robot_Pose.poses[0].position.x
         Data_Measure[1][0] = data.Robot_Pose.poses[0].position.y
         Data_Measure[2][0] = data.Robot_Pose.poses[0].position.z
-        correction_file.write(str(Data_Measure[0][0])+",")
-        correction_file.write(str(Data_Measure[1][0])+",")
-        correction_file.write(str(Data_Measure[2][0])+"\n")
+        correction_file_.write(str(Data_Measure[0][0])+",")
+        correction_file_.write(str(Data_Measure[1][0])+",")
+        correction_file_.write(str(Data_Measure[2][0])+"\n")
         Data_Measure[3][0] = 1
         result = Matrix.dot(Data_Measure)
         data.Robot_Pose.poses[0].position.x = result[0][0]
         data.Robot_Pose.poses[0].position.y = result[1][0]
         data.Robot_Pose.poses[0].position.z = result[2][0]
-        correction_file.write("a,"+str(data.Robot_ID)+",")
-        correction_file.write(str(result[0][0])+",")
-        correction_file.write(str(result[1][0])+",")
-        correction_file.write(str(result[2][0])+"\n")
+        correction_file_.write("a,"+str(data.Robot_ID)+",")
+        correction_file_.write(str(result[0][0])+",")
+        correction_file_.write(str(result[1][0])+",")
+        correction_file_.write(str(result[2][0])+"\n")
+
+    correction_file_.close()
+
     return data
 
 # callback function for rospy to used
@@ -322,6 +326,7 @@ def wifi_communication():
 ##                conn.sendall(bypass_data)
 
             # client wil send close message then close
+            data = 10
             if not data or rospy.is_shutdown() or end_flag == 1:
                 break
             
@@ -373,7 +378,7 @@ def wifi_communication():
         data = "END"
         data = data.encode("utf-8")
         # send data to client
-        conn.sendall(data)
+        # conn.sendall(data)
 
 def plane_calibration():
     global cali_tag
@@ -502,7 +507,9 @@ if __name__ == '__main__':
     global path_file, sense_file,correction_file
     path_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_path.txt","w")
     sense_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_sense.txt","w")
-    correction_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_corr_0904_1.txt","w")
+    correction_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/robot_corr_0904_1.txt"
+    correction_file_ = open(correction_file,"w")
+    correction_file_.close()
 
     # run and wait for calibration first for localization
     plane_calibration()
