@@ -72,7 +72,7 @@ class MainThread(threading.Thread):
                     self.update_path_flag = 1
 
             # trigger end of code
-            if time.time() - start_time > 100:
+            if time.time() - start_time > 1800:
                 # trigger end of code
                 break
                 pass
@@ -266,63 +266,65 @@ def wifi_communication():
     count = 0
 
     try:
-        # for python 2.7 used !!
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)# stream using TCP, afinet is using ipv4
-        s.bind((HOST, PORT))
-        # creating listening port
-        print('listen to port')
-        r = s.listen(5)
-        print('r: ',r)
-        if r == None:
-            while r != None:
-                r = s.listen(5)
-                if end_flag == 1:
-                    break
-        # accept from client request/connect
-        conn, addr = s.accept()
-
-        print('Connected by', addr)
+##        # for python 2.7 used !!
+##        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)# stream using TCP, afinet is using ipv4
+##        s.bind((HOST, PORT))
+##        # creating listening port
+##        print('listen to port')
+##        r = s.listen(5)
+##        print('r: ',r)
+##        if r == None:
+##            while r != None:
+##                r = s.listen(5)
+##                if end_flag == 1:
+##                    break
+##        # accept from client request/connect
+##        conn, addr = s.accept()
+##
+##        print('Connected by', addr)
         while True:
-            # get data from client
-            print('collect wifi data')
-            data = conn.recv(1024)
-            data = data.decode("utf-8")
-            if data.find('DK2') == 0:
-                print('receive from DK2')
-                print(data)
-                path_file.write(data)
-                path_file.write("\n")
-
-                # print('sending data : PC,1,2,3')
-                # if count >= 1:
-                #     data = "END"
-                #     data = data.encode("utf-8")
-                #     # send data to client
-                #     conn.sendall(data)
-                # else:
-
-                # TODO: future used for location update from robot
-                # main_code.update_pose(pose_update)
-
-            if data_receive_flag == 1:
-                data_receive_flag = 0
-                # data_receive = 'PC,R,1,-2,C,11,23,P,2,3,4,5,6,7,8,9,12,13,E'
-                sense_file.write(data_receive)
-                data_receive_ = data_receive.encode("utf-8")
-
-                # send data to client
-                conn.sendall(data_receive_)
-                print('send: ',data_receive_)
-                # count = count + 1
-            else:
-                # send data to client
-                bypass_data = 'PC,E'
-                bypass_data = bypass_data.encode("utf-8")
-                conn.sendall(bypass_data)
+            pass
+##            # get data from client
+##            print('collect wifi data')
+##            data = conn.recv(1024)
+##            data = data.decode("utf-8")
+##            if data.find('DK2') == 0:
+##                print('receive from DK2')
+##                print(data)
+##                path_file.write(data)
+##                path_file.write("\n")
+##
+##                # print('sending data : PC,1,2,3')
+##                # if count >= 1:
+##                #     data = "END"
+##                #     data = data.encode("utf-8")
+##                #     # send data to client
+##                #     conn.sendall(data)
+##                # else:
+##
+##                # TODO: future used for location update from robot
+##                # main_code.update_pose(pose_update)
+##
+##            if data_receive_flag == 1:
+##                data_receive_flag = 0
+##                # data_receive = 'PC,R,1,-2,C,11,23,P,2,3,4,5,6,7,8,9,12,13,E'
+##                sense_file.write(data_receive)
+##                data_receive_ = data_receive.encode("utf-8")
+##
+##                # send data to client
+##                conn.sendall(data_receive_)
+##                print('send: ',data_receive_)
+##                # count = count + 1
+##            else:
+##                # send data to client
+##                bypass_data = 'PC,E'
+##                bypass_data = bypass_data.encode("utf-8")
+##                conn.sendall(bypass_data)
 
             # client wil send close message then close
             if not data or rospy.is_shutdown() or end_flag == 1:
                 break
+            
         # for python 3 used !!
         # with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:  # stream using TCP, afinet is using ipv4
         #     s.bind((HOST, PORT))
@@ -474,7 +476,15 @@ if __name__ == '__main__':
     cali_tag_no.append(14)
     cali_tag_no.append(15)
     cali_tag_no.append(16)
+    cali_tag_no.append(17)
+    cali_tag_no.append(18)
+    cali_tag_no.append(19)
+    cali_tag_no.append(20)
     cali_tag = []
+    cali_tag.append([])
+    cali_tag.append([])
+    cali_tag.append([])
+    cali_tag.append([])
     cali_tag.append([])
     cali_tag.append([])
     cali_tag.append([])
@@ -492,7 +502,7 @@ if __name__ == '__main__':
     global path_file, sense_file,correction_file
     path_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_path.txt","w")
     sense_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_sense.txt","w")
-    correction_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_corrrection3.txt","w")
+    correction_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_corr_0904_1.txt","w")
 
     # run and wait for calibration first for localization
     plane_calibration()

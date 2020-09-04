@@ -15,12 +15,13 @@ def handle_correction_service(req):
         for j in range(3):
             temp.append(req.Actual[i*3+j])
         Actual_Data.append(temp)
-
+    Actual_Data.append([0,0,0])
     for i in range(m):
         temp = []
         for j in range(3):
             temp.append(req.Measure[i*3+j])
         Measure_Data.append(temp)
+    Measure_Data.append([0,0,0])
 
     Actual_Data = np.array(Actual_Data)
     Measure_Data = np.array(Measure_Data)
