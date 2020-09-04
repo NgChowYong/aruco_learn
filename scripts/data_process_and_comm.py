@@ -95,7 +95,7 @@ class MainThread(threading.Thread):
             self.map[int(data.Obstacle_Pose.poses[i].position.x)][int(data.Obstacle_Pose.poses[i].position.y)] = 1
         cv2.imshow('image', self.map)
 
-        # do cehcking for path update
+        # do checking for path update
         self.new_path_flag = 1
 
     def update_path(self, ret):
@@ -123,16 +123,7 @@ def Robot_Data_Process(data, Camera_Pose, ret):
     theta = 0
     l = len(data.poses)
     if l > 1:
-        # TODO : modify this code here to use multiple tag
-##        for i in range(l):
-##            # do find center
-##            # do estimation
-##            x += data.poses[i].position.x
-##            y += data.poses[i].position.y
-##            # do rotation getting out
-##        x = x / len(data)
-##        y = y / len(data)
-##        # x = x/len(data)
+        # TODO : Reserved for many same tag detected
         pass
 
     elif l == 1:
@@ -226,13 +217,14 @@ def callback(data):
     global cali_tag
     global cali_tag_no
     global cali_flag
-
+    global do_cali
     if cali_flag == 0:
-        # do data collection
-        for i in range(len(data.Obstacle_Pose.poses)):
-            for j in range(len(cali_tag_no)):
-                if data.Obstacle_ID[i] == cali_tag_no[j]:
-                    cali_tag[j].append(data.Obstacle_Pose.poses[i].position)
+        if do_cali == 1:
+            # do data collection
+            for i in range(len(data.Obstacle_Pose.poses)):
+                for j in range(len(cali_tag_no)):
+                    if data.Obstacle_ID[i] == cali_tag_no[j]:
+                        cali_tag[j].append(data.Obstacle_Pose.poses[i].position)
     elif cali_flag == 1:
         # do Matrix calculation n stop collecting data
         pass
@@ -270,60 +262,65 @@ def wifi_communication():
     count = 0
 
     try:
-##        # for python 2.7 used !!
-##        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)# stream using TCP, afinet is using ipv4
-##        s.bind((HOST, PORT))
-##        # creating listening port
-##        print('listen to port')
-##        r = s.listen(5)
-##        print('r: ',r)
-##        if r == None:
-##            while r != None:
-##                r = s.listen(5)
-##                if end_flag == 1:
-##                    break
-##        # accept from client request/connect
-##        conn, addr = s.accept()
-##
-##        print('Connected by', addr)
+        # for python 2.7 used !!
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)# stream using TCP, afinet is using ipv4
+        s.bind((HOST, PORT))
+        # creating listening port
+        print('listen to port')
+        r = s.listen(5)
+        print('r: ',r)
+        if r == None:
+            while r != None:
+                r = s.listen(5)
+                if end_flag == 1:
+                    break
+        # accept from client request/connect
+        conn, addr = s.accept()
+
+        print('Connected by', addr)
         while True:
-            pass
-##            # get data from client
-##            print('collect wifi data')
-##            data = conn.recv(1024)
-##            data = data.decode("utf-8")
-##            if data.find('DK2') == 0:
-##                print('receive from DK2')
-##                print(data)
-##                path_file.write(data)
-##                path_file.write("\n")
-##
-##                # print('sending data : PC,1,2,3')
-##                # if count >= 1:
-##                #     data = "END"
-##                #     data = data.encode("utf-8")
-##                #     # send data to client
-##                #     conn.sendall(data)
-##                # else:
-##
-##                # TODO: future used for location update from robot
-##                # main_code.update_pose(pose_update)
-##
-##            if data_receive_flag == 1:
-##                data_receive_flag = 0
-##                # data_receive = 'PC,R,1,-2,C,11,23,P,2,3,4,5,6,7,8,9,12,13,E'
-##                sense_file.write(data_receive)
-##                data_receive_ = data_receive.encode("utf-8")
-##
-##                # send data to client
-##                conn.sendall(data_receive_)
-##                print('send: ',data_receive_)
-##                # count = count + 1
-##            else:
-##                # send data to client
-##                bypass_data = 'PC,E'
-##                bypass_data = bypass_data.encode("utf-8")
-##                conn.sendall(bypass_data)
+            # get data from client
+            print('collect wifi data')
+            data = conn.recv(1024)
+            data = data.decode("utf-8")
+            if data.find('DK2') == 0:
+                print('receive from DK2')
+                print(data)
+                f = open(path_file,"a")
+                f.write(data)
+                f.write("\n")
+                f.close()
+                # print('sending data : PC,1,2,3')
+                # if count >= 1:
+                #     data = "END"
+                #     data = data.encode("utf-8")
+                #     # send data to client
+                #     conn.sendall(data)
+                # else:
+
+                # TODO: future used for location update from robot
+                # main_code.update_pose(pose_update)
+
+            if data_receive_flag == 1:
+                data_receive_flag = 0
+                # data_receive = 'PC,R,1,-2,C,11,23,P,2,3,4,5,6,7,8,9,12,13,E'
+                
+                f = open(sense_file,"a")
+                f.write(data_receive)
+                f.write("\n")
+                f.close()
+                
+                data_receive_ = data_receive.encode("utf-8")
+
+                # send data to client
+                conn.sendall(data_receive_)
+                print('send: ',data_receive_)
+                # count = count + 1
+            else:
+                # send data to client
+                bypass_data = 'PC,E'
+                bypass_data = bypass_data.encode("utf-8")
+                conn.sendall(bypass_data)
 
             # client wil send close message then close
             data = 10
@@ -373,129 +370,158 @@ def wifi_communication():
         #                 break
     finally:
         end_flag = 1
-        path_file.close()
-        sense_file.close()
         data = "END"
         data = data.encode("utf-8")
         # send data to client
-        # conn.sendall(data)
+        try:
+            conn.sendall(data)
+        except:
+            pass
 
 def plane_calibration():
+    global do_cali
     global cali_tag
     global cali_tag_no
     global cali_flag
     global Matrix
     global end_flag
+    global correction_matrix_file
     # collecting data
     cali_flag = 0
 
-    while True:
-        break_flag = 0
+    if do_cali == 1:
+        while True:
+            break_flag = 0
+            for i in range(len(cali_tag_no)):
+                if len(cali_tag[i]) < 100:
+                    break_flag = 1
+                    print('collecting...')
+                    print(cali_tag_no[i],',',len(cali_tag[i]))
+
+            # small amount of data, remain collecting
+            if break_flag == 1:
+                cali_flag = 0
+
+            # enough amount of data, stop collecting data
+            elif  break_flag == 0:
+                cali_flag = 1
+                # can check variance ?
+                break
+
+            if end_flag == 1:
+                return 0
+
+        print('start calculating ')
+
+        Measure_Data = []
+        # calc mean of each data
         for i in range(len(cali_tag_no)):
-            if len(cali_tag[i]) < 100:
-                break_flag = 1
-                print('collecting...')
-                print(cali_tag_no[i],',',len(cali_tag[i]))
+            meanx = 0
+            meany = 0
+            meanz = 0
+            l = len(cali_tag[i])
+            for j in range(l):
+                meanx += cali_tag[i][j].x
+                meany += cali_tag[i][j].y
+                meanz += cali_tag[i][j].z
+            meanx = meanx/l
+            meany = meany/l
+            meanz = meanz/l
+            Measure_Data.append(meanx)
+            Measure_Data.append(meany)
+            Measure_Data.append(meanz)
 
-        # small amount of data, remain collecting
-        if break_flag == 1:
-            cali_flag = 0
+        # get service request
+        req = correction_serviceRequest()
+        req.Measure = Measure_Data
+        req.Size = 4
+        Actual = []
+        global coordinate_file
+        f = open(coordinate_file)
+        for i in f:
+            if i[-1] == '\n':
+                i = i[:-1]
+            i = i.split(',')
+            for j in cali_tag_no:
+                #print(i)
+                #print(j)
+                if str(j) == i[0]:
+                    Actual.append(float(i[1]))
+                    Actual.append(float(i[2]))
+                    Actual.append(float(i[3]))
+        req.Actual = Actual
+        print('get actual data from file done, start call service')
 
-        # enough amount of data, stop collecting data
-        elif  break_flag == 0:
-            cali_flag = 1
-            # can check variance ?
-            break
+        # do calibration service to get calibration matrix
+        rospy.wait_for_service('correction_service')
+        try:
+            correction_service_ = rospy.ServiceProxy('correction_service', correction_service)
+            resp = correction_service_(req)
+            resp = resp.Matrix
+        except rospy.ServiceException as e:
+            print("Service call failed: %s"%e)
+            resp = np.zeros([12,1])
 
-        if end_flag == 1:
-            return 0
+        Matrix = np.zeros([3, 4])
+        for i in range(3):
+            for j in range(4):
+                Matrix[i][j] = resp[i*4+j]
+                
+        f = open(correction_matrix_file,"w")
+        for i in range(3):
+            str_ = ""
+            for j in range(4):
+                str_ = str_ + str(Matrix[i][j]) + ","
+            
+            str_ = str_[:-1]
+            str_ = str_ + "\n"
+            f.write(str_)
+        f.close()
 
-    print('start calculating ')
-
-    Measure_Data = []
-    # calc mean of each data
-    for i in range(len(cali_tag_no)):
-        meanx = 0
-        meany = 0
-        meanz = 0
-        l = len(cali_tag[i])
-        for j in range(l):
-            meanx += cali_tag[i][j].x
-            meany += cali_tag[i][j].y
-            meanz += cali_tag[i][j].z
-        meanx = meanx/l
-        meany = meany/l
-        meanz = meanz/l
-        Measure_Data.append(meanx)
-        Measure_Data.append(meany)
-        Measure_Data.append(meanz)
-
-    # get service request
-    req = correction_serviceRequest()
-    req.Measure = Measure_Data
-    req.Size = 4
-    Actual = []
-    f = open("/home/icmems/WALLE_project/catkin_ws/src/localization/scripts/coordinate.txt")
-    for i in f:
-        if i[-1] == '\n':
-            i = i[:-1]
-        i = i.split(',')
-        for j in cali_tag_no:
-            #print(i)
-            #print(j)
-            if str(j) == i[0]:
-                Actual.append(float(i[1]))
-                Actual.append(float(i[2]))
-                Actual.append(float(i[3]))
-    req.Actual = Actual
-    print('get actual data from file done, start call service')
-
-    # do calibration service to get calibration matrix
-    rospy.wait_for_service('correction_service')
-    try:
-        correction_service_ = rospy.ServiceProxy('correction_service', correction_service)
-        resp = correction_service_(req)
-        resp = resp.Matrix
-    except rospy.ServiceException as e:
-        print("Service call failed: %s"%e)
-        resp = np.zeros([12,1])
-
-    Matrix = np.zeros([3, 4])
-    for i in range(3):
-        for j in range(4):
-            Matrix[i][j] = resp[i*4+j]
-    #print(M)
-    cali_flag = 2
-    print('done correction calculation')
+        #print(M)
+        cali_flag = 2
+        print('done correction calculation')
+    elif do_cali == 0:
+        Matrix = np.zeros([3, 4])
+        f = open(correction_matrix_file,"r")
+        count_i = 0;
+        for i in f:
+            s = i.split(',')
+            if s[0] != '\n':
+                for j in range(4):
+                    s[j] = float(s[j])
+                    Matrix[count_i][j] = s[j]
+            count_i = count_i + 1;
+            
+        f.close()
+        
+        cali_flag = 2        
+        print('done correction calculation')
 
 if __name__ == '__main__':
     rospy.init_node('SendDataToSTM', anonymous=True)
     rospy.Subscriber("Camera_Data", Camera_Data, callback)
 
+    global coordinate_file
+    coordinate_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/scripts/coordinate.txt"
+
+    global do_cali
     global cali_tag
     global cali_tag_no
     global cali_flag
+    f = open(coordinate_file,"r")
+    do_cali = 0
     cali_flag = 0
     cali_tag_no = []
-    cali_tag_no.append(13)
-    cali_tag_no.append(14)
-    cali_tag_no.append(15)
-    cali_tag_no.append(16)
-    cali_tag_no.append(17)
-    cali_tag_no.append(18)
-    cali_tag_no.append(19)
-    cali_tag_no.append(20)
     cali_tag = []
-    cali_tag.append([])
-    cali_tag.append([])
-    cali_tag.append([])
-    cali_tag.append([])
-    cali_tag.append([])
-    cali_tag.append([])
-    cali_tag.append([])
-    cali_tag.append([])
 
-
+    for i in f:
+        s = i.split(',')
+        if s[0] != '\n':
+            s[0] = int(s[0])
+            cali_tag_no.append(s[0])
+            cali_tag.append([])
+    
     # run main code
     global end_flag, main_code
     end_flag = 0
@@ -504,12 +530,17 @@ if __name__ == '__main__':
     main_code.start()
 
     # file to save path data
-    global path_file, sense_file,correction_file
-    path_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_path.txt","w")
-    sense_file = open("/home/icmems/WALLE_project/catkin_ws/src/localization/robot_sense.txt","w")
+    global path_file, sense_file, correction_file, correction_matrix_file
+    path_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/robot_path.txt"
+    sense_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/robot_sense.txt"
     correction_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/robot_corr_0904_1.txt"
+    correction_matrix_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/scripts/Correction_Matrix.txt"
     correction_file_ = open(correction_file,"w")
     correction_file_.close()
+    path_file_ = open(path_file,"w")
+    path_file_.close()
+    sense_file_ = open(sense_file,"w")
+    sense_file_.close()
 
     # run and wait for calibration first for localization
     plane_calibration()
