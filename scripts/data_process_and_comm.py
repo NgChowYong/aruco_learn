@@ -40,12 +40,13 @@ class MainThread(threading.Thread):
                     # print('strange' ,j , i)
         self.map = img  # 0 == wall 255 = free
 
-        self.robot_pose = [100, 100, 0]  # x y theta
+        self.robot_pose = [0, -300, 0]  # x y theta
         self.task1 = [200, 100, 0]  # x y theta
         self.task2 = [100, 200, 0]  # x y theta
 
         self.old_path = []
-        self.new_path = []
+        self.new_path = [[400,-400,90],[400,400,-180],[-400,400,-90],[-400,-400,0]]
+        self.count = 0
 
     def run(self):
         global end_flag
@@ -66,10 +67,17 @@ class MainThread(threading.Thread):
             if self.new_path_flag == 1:
                 self.new_path_flag = 0
                 # do a star and check for new path
-                self.Astar()
+                #self.Astar()
                 # if new path then set flag for update_path
+                # print("start run path")
+                xx = self.robot_pose[0] - self.new_path[-1][0]
+                yy = self.robot_pose[1] - self.new_path[-1][1]
+                if math.sqrt(xx*xx + yy*yy) < 100:
+                    self.old_path = []
+                    self.count = 0
                 if self.old_path != self.new_path:
                     self.update_path_flag = 1
+                    print("start update path")
 
             # trigger end of code
             if time.time() - start_time > 1800:
@@ -91,19 +99,31 @@ class MainThread(threading.Thread):
 
     def update_map(self, data):
         # update map
-        for i in range(len(data.Obstacle_Pose.poses)):
-            self.map[int(data.Obstacle_Pose.poses[i].position.x)][int(data.Obstacle_Pose.poses[i].position.y)] = 1
-        cv2.imshow('image', self.map)
+#        for i in range(len(data.Obstacle_Pose.poses)):
+#            self.map[int(data.Obstacle_Pose.poses[i].position.x)][int(data.Obstacle_Pose.poses[i].position.y)] = 1
+#        cv2.imshow('image', self.map)
 
         # do checking for path update
         self.new_path_flag = 1
 
-    def update_path(self, ret):
-        if self.update_path_flag == 0:
-            self.update_path_flag = 1
+    def update_path(self, ret, connection,flag):
+        if self.update_path_flag == 1 and connection == 1:
+            print("update path")
+            self.update_path_flag = 0
             temp = "P,"
-            for i in range(int(len(self.new_path) / 2)):
-                temp = temp + self.new_path[i * 2], "," + self.new_path[i * 2 + 1] + ","
+            #for i in range(int(len(self.new_path) / 2)):
+            for i in self.new_path:
+                #temp = temp + self.new_path[i*2] + "," + self.new_path[i * 2 + 1] + ","
+		if (i == self.new_path[-1]):
+                    i[2] = int(i[2]*3.1415/180*1000)
+                    temp = temp + str(i[0]) + "," + str(i[1]) + "," + str(i[2]) + ","
+                else:
+                    temp = temp + str(i[0]) + "," + str(i[1]) + ","
+            if flag == 0:
+                self.count += 1
+                if self.count > 5:
+                    self.old_path = self.new_path
+                    self.count = 7
             return ret + temp
         else:
             # round( ? *1000)
@@ -218,6 +238,8 @@ def callback(data):
     global cali_tag_no
     global cali_flag
     global do_cali
+    global robot_connection
+
     if cali_flag == 0:
         if do_cali == 1:
             # do data collection
@@ -245,7 +267,7 @@ def callback(data):
 
     # obstacle and path
     main_code.update_map(data)
-    ret = main_code.update_path(ret)
+    ret = main_code.update_path(ret,robot_connection,data_receive_flag)
 
     # data_receive = 'PC,R,1,-2,C,11,23,P,2,3,4,5,6,7,1234,E'
     data_receive = ret + "E"
@@ -258,6 +280,7 @@ def wifi_communication():
     global data_receive, data_receive_flag
     global end_flag, main_code
     global path_file, sense_file
+    global robot_connection
     print('start wifi')
     count = 0
 
@@ -304,14 +327,13 @@ def wifi_communication():
             if data_receive_flag == 1:
                 data_receive_flag = 0
                 # data_receive = 'PC,R,1,-2,C,11,23,P,2,3,4,5,6,7,8,9,12,13,E'
-                
+
                 f = open(sense_file,"a")
                 f.write(data_receive)
                 f.write("\n")
                 f.close()
-                
+                robot_connection = 1
                 data_receive_ = data_receive.encode("utf-8")
-
                 # send data to client
                 conn.sendall(data_receive_)
                 print('send: ',data_receive_)
@@ -326,7 +348,7 @@ def wifi_communication():
             data = 10
             if not data or rospy.is_shutdown() or end_flag == 1:
                 break
-            
+
         # for python 3 used !!
         # with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:  # stream using TCP, afinet is using ipv4
         #     s.bind((HOST, PORT))
@@ -387,7 +409,7 @@ def plane_calibration():
     global end_flag
     global correction_matrix_file
     # collecting data
-    cali_flag = 0
+    cali_flag = 1
 
     if do_cali == 1:
         while True:
@@ -466,13 +488,13 @@ def plane_calibration():
         for i in range(3):
             for j in range(4):
                 Matrix[i][j] = resp[i*4+j]
-                
+
         f = open(correction_matrix_file,"w")
         for i in range(3):
             str_ = ""
             for j in range(4):
                 str_ = str_ + str(Matrix[i][j]) + ","
-            
+
             str_ = str_[:-1]
             str_ = str_ + "\n"
             f.write(str_)
@@ -492,15 +514,14 @@ def plane_calibration():
                     s[j] = float(s[j])
                     Matrix[count_i][j] = s[j]
             count_i = count_i + 1;
-            
+
         f.close()
-        
-        cali_flag = 2        
+
+        cali_flag = 2
         print('done correction calculation')
 
 if __name__ == '__main__':
     rospy.init_node('SendDataToSTM', anonymous=True)
-    rospy.Subscriber("Camera_Data", Camera_Data, callback)
 
     global coordinate_file
     coordinate_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/scripts/coordinate.txt"
@@ -509,6 +530,8 @@ if __name__ == '__main__':
     global cali_tag
     global cali_tag_no
     global cali_flag
+    global robot_connection
+    robot_connection = 0
     f = open(coordinate_file,"r")
     do_cali = 0
     cali_flag = 0
@@ -521,13 +544,18 @@ if __name__ == '__main__':
             s[0] = int(s[0])
             cali_tag_no.append(s[0])
             cali_tag.append([])
-    
+
     # run main code
     global end_flag, main_code
+    global data_receive_flag
+    data_receive_flag = 0
     end_flag = 0
     main_code = 0
-    main_code = MainThread(1)
+    main_code = MainThread(0.1)
     main_code.start()
+
+    # start collect data
+    rospy.Subscriber("Camera_Data", Camera_Data, callback)
 
     # file to save path data
     global path_file, sense_file, correction_file, correction_matrix_file
