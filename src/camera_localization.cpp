@@ -113,24 +113,25 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
         tf::Quaternion q = cam2pos.getRotation();
         tf::Matrix3x3 mr(q);
 
-        //try {
-        //    std::string ss1 = "/camera_color_optical_frame";
-        //    std::string ss2 = "/fiducial_";
-        //    ss2.append(std::to_string(origin));
-        //    // from cam to origin
-        //    // listener.waitForTransform(ss2, ss1, ros::Time(0), ros::Duration(0.001));
-        //    listener.lookupTransform(ss2, ss1, ros::Time(0), transform);
-        //} catch (tf::TransformException ex) {
-        //    std::cout << "\nNOT FOUND --" << ex.what() << "\n";
-        //}
-
-        //// rotation from rotation and translation
-        //tf::Quaternion q = transform.getRotation();
-        //tf::Matrix3x3 mr(q);
-
         double xx = aruco_.transforms[i].transform.translation.x;
         double yy = aruco_.transforms[i].transform.translation.y;
         double zz = aruco_.transforms[i].transform.translation.z;
+
+        // TODO : need to improve relative rotation here !!! 
+        // cam2pos              : from origin to camera
+        // aruco_.transforms[i] : from camera to tag
+        // q' = q2 * q1 => for q1 followed by q2 rotation
+        // tempq is relative rotation from origin to tag
+        tf::Quaternion tempa =  tf::Quaternion(aruco_.transforms[i].transform.rotation.x,aruco_.transforms[i].transform.rotation.y,aruco_.transforms[i].transform.rotation.z,aruco_.transforms[i].transform.rotation.w); 
+        tf::Quaternion tempq =  tempa * cam2pos.getRotation();
+
+        tf::Quaternion delta_q = tempq.inverse() * cam2pos.getRotation();
+        doubel angle_diff_tag_and_origin = 2*acos(delta_q.w());
+
+        // big angle change need to skip this data
+        if(angle_diff_tag_and_origin > 1.8){
+          continue;
+        }
 
         //// do rotation and translation to get 'x y z' wrt origin 
         double x = mr[0][0] * xx + mr[0][1] * yy + mr[0][2] * zz + cam2pos.getOrigin().x();
@@ -146,14 +147,6 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
         temp.position.x = x;
         temp.position.y = y;
         temp.position.z = z;
-
-        // TODO : need to improve relative rotation here !!! 
-        // cam2pos              : from origin to camera
-        // aruco_.transforms[i] : from camera to tag
-        // q' = q2 * q1 => for q1 followed by q2 rotation
-        // tempq is relative rotation from origin to tag
-        tf::Quaternion tempa =  tf::Quaternion(aruco_.transforms[i].transform.rotation.x,aruco_.transforms[i].transform.rotation.y,aruco_.transforms[i].transform.rotation.z,aruco_.transforms[i].transform.rotation.w); 
-        tf::Quaternion tempq =  tempa * cam2pos.getRotation();
 
         // conjugate
         tf::Quaternion tempq_conjugate = tempq;
