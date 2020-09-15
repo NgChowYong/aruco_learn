@@ -21,118 +21,6 @@ HOST = '192.168.0.199'  # Standard loopback interface address (localhost)
 PORT = 11223  # Port to listen on (non-privileged ports are > 1023)
 
 
-class MainThread(threading.Thread):
-    def __init__(self, num):
-        threading.Thread.__init__(self)
-        self.num = num
-        self.new_path_flag = 0
-        self.update_path_flag = 0
-
-        img = cv2.imread('/home/icmems/WALLE_project/catkin_ws/src/localization/simple_version_small_small.jpg', cv2.IMREAD_GRAYSCALE)
-        self.width = img.shape[1]
-        self.height = img.shape[0]
-        for i in range(self.width):
-            for j in range(self.height):
-                if img[j][i] == 0:
-                    img[j][i] = -1
-                else:
-                    img[j][i] = 0
-                    # print('strange' ,j , i)
-        self.map = img  # 0 == wall 255 = free
-
-        self.robot_pose = [0, -300, 0]  # x y theta
-        self.task1 = [200, 100, 0]  # x y theta
-        self.task2 = [100, 200, 0]  # x y theta
-
-        self.old_path = []
-        self.new_path = [[400,-400,90],[400,400,-180],[-400,400,-90],[-400,-400,0]]
-        self.count = 0
-
-    def run(self):
-        global end_flag
-        print("thread start")
-        # initialize map and all parameter....
-        # can read a yaml file ?
-
-        # wait for start cmd
-        # after start cmd
-
-        start_time = time.time()
-        while 1:
-
-            # do smth
-            time.sleep(self.num)
-
-            # update of path ?
-            if self.new_path_flag == 1:
-                self.new_path_flag = 0
-                # do a star and check for new path
-                #self.Astar()
-                # if new path then set flag for update_path
-                # print("start run path")
-                xx = self.robot_pose[0] - self.new_path[-1][0]
-                yy = self.robot_pose[1] - self.new_path[-1][1]
-                if math.sqrt(xx*xx + yy*yy) < 100:
-                    self.old_path = []
-                    self.count = 0
-                if self.old_path != self.new_path:
-                    self.update_path_flag = 1
-                    print("start update path")
-
-            # trigger end of code
-            if time.time() - start_time > 1800:
-                # trigger end of code
-                break
-                pass
-
-            # end of code
-            if (end_flag == 1) or rospy.is_shutdown():
-                end_flag = 1
-                break
-        print("thread end")
-
-    def update_pose(self, pose_update):
-        #print("test")
-        # update pose of robot, camera pose is not needed in calculation
-        if pose_update is not None:
-            self.robot_pose = pose_update
-
-    def update_map(self, data):
-        # update map
-#        for i in range(len(data.Obstacle_Pose.poses)):
-#            self.map[int(data.Obstacle_Pose.poses[i].position.x)][int(data.Obstacle_Pose.poses[i].position.y)] = 1
-#        cv2.imshow('image', self.map)
-
-        # do checking for path update
-        self.new_path_flag = 1
-
-    def update_path(self, ret, connection,flag):
-        if self.update_path_flag == 1 and connection == 1:
-            print("update path")
-            self.update_path_flag = 0
-            temp = "P,"
-            #for i in range(int(len(self.new_path) / 2)):
-            for i in self.new_path:
-                #temp = temp + self.new_path[i*2] + "," + self.new_path[i * 2 + 1] + ","
-		if (i == self.new_path[-1]):
-                    i[2] = int(i[2]*3.1415/180*1000)
-                    temp = temp + str(i[0]) + "," + str(i[1]) + "," + str(i[2]) + ","
-                else:
-                    temp = temp + str(i[0]) + "," + str(i[1]) + ","
-            if flag == 0:
-                self.count += 1
-                if self.count > 5:
-                    self.old_path = self.new_path
-                    self.count = 7
-            return ret + temp
-        else:
-            # round( ? *1000)
-            return ret
-
-    def Astar(self):
-        pass
-
-
 # TODO: need to calculate distance and angle in 2D
 def Robot_Data_Process(data, Camera_Pose, ret):
     # calculate length and angle of robot
@@ -231,7 +119,7 @@ def Data_Correction(data):
 # callback function for rospy to used
 def callback(data):
     global data_receive, data_receive_flag
-    global main_code
+    
     # data process
 
     global cali_tag
@@ -249,7 +137,7 @@ def callback(data):
                         cali_tag[j].append(data.Obstacle_Pose.poses[i].position)
     elif cali_flag == 1:
         # do Matrix calculation n stop collecting data
-        pass
+        return
 
     elif cali_flag == 2:
         # TODO: do correction to all data
@@ -260,19 +148,25 @@ def callback(data):
 
     # robot
     ret, pose_update = Robot_Data_Process(data.Robot_Pose, data.Camera_Pose, ret)
-    main_code.update_pose(pose_update)
+    #main_code.update_pose(pose_update)
 
     # camera pose
     ret = Cam_Data_Process(data.Camera_Pose, ret)
 
     # obstacle and path
-    main_code.update_map(data)
-    ret = main_code.update_path(ret,robot_connection,data_receive_flag)
+    #main_code.update_map(data)
+    #ret = main_code.update_path(ret,robot_connection,data_receive_flag)
 
-    # data_receive = 'PC,R,1,-2,C,11,23,P,2,3,4,5,6,7,1234,E'
+    #data_receive = 'PC,R,1,-2,C,11,23,P,2,3,4,5,6,7,1234,E'
+    ret = 'PC,R,0,0,P,2,3,4,5,6,7,1234,'
     data_receive = ret + "E"
     data_receive_flag = 1
     # print(data_receive)
+    
+    global end_flag
+    end_flag = 1
+    # send once then close
+    
 
 # Send data to STM
 # haven't done update data from STM part
@@ -367,8 +261,11 @@ def plane_calibration():
     global Matrix
     global end_flag
     global correction_matrix_file
+    
     # collecting data
     cali_flag = 1
+
+    print('start plane calibration process')
 
     if do_cali == 1:
         while True:
@@ -431,6 +328,7 @@ def plane_calibration():
                     Actual.append(float(i[2]))
                     Actual.append(float(i[3]))
         req.Actual = Actual
+        f.close()
         print('get actual data from file done, start call service')
 
         # do calibration service to get calibration matrix
@@ -443,27 +341,58 @@ def plane_calibration():
             print("Service call failed: %s"%e)
             resp = np.zeros([12,1])
 
+        # resize to 3x4 matrix
         Matrix = np.zeros([3, 4])
         for i in range(3):
             for j in range(4):
                 Matrix[i][j] = resp[i*4+j]
 
+        # save to file
         f = open(correction_matrix_file,"w")
         for i in range(3):
             str_ = ""
             for j in range(4):
                 str_ = str_ + str(Matrix[i][j]) + ","
-
             str_ = str_[:-1]
             str_ = str_ + "\n"
             f.write(str_)
         f.close()
 
+        # check for error of matrix
+        Error_list = []
+        for i in range(len(cali_tag_no)):
+            x = np.zeros([4,1])
+            x[0][0] = Measure_Data[i*3]
+            x[1][0] = Measure_Data[i*3+1]
+            x[2][0] = Measure_Data[i*3+2]
+            x[3][0] = 1
+            y = Matrix.dot(x)
+            dx = y[0][0] - Actual[i*3]
+            dy = y[1][0] - Actual[i*3+1]
+            dz = y[2][0] - Actual[i*3+2]
+            sqrtxy  = sqrt(dx*dx+dy*dy)
+            sqrtxyz = sqrt(dx*dx+dy*dy+dz*dz)
+            Error_list.append([sqrtxy,sqrtxyz])
+        # display error
+        avg_error_xy = 0
+        avg_error_xyz = 0
+        print('error of each point after calibration:')
+        for i in range(len(Error_list)):
+            no = cali_tag_no[i]
+            avg_error_xy += Error_list[i][0]
+            avg_error_xyz += Error_list[i][1]
+            print('err number, xy err, xyz err: ',no,' , ',Error_list[i][0],' , ',Error_list[i][1])
+        avg_error_xy = avg_error_xy/len(Error_list)
+        avg_error_xyz = avg_error_xyz/len(Error_list)
+        print('average error after calibration:')
+        print('err xy: ', avg_error_xy)
+        print('err xy: ', avg_error_xyz)
         #print(M)
         cali_flag = 2
         print('done correction calculation')
     elif do_cali == 0:
         Matrix = np.zeros([3, 4])
+        # direct reading file data/ corrected matrix
         f = open(correction_matrix_file,"r")
         count_i = 0;
         for i in f:
@@ -480,17 +409,19 @@ def plane_calibration():
         print('done correction calculation')
 
 if __name__ == '__main__':
+    
     rospy.init_node('SendDataToSTM', anonymous=True)
 
     global coordinate_file
-    coordinate_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/scripts/coordinate.txt"
-
     global do_cali
     global cali_tag
     global cali_tag_no
     global cali_flag
     global robot_connection
     robot_connection = 0
+
+    # read data from file
+    coordinate_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/scripts/coordinate.txt"
     f = open(coordinate_file,"r")
     do_cali = 0
     cali_flag = 0
@@ -503,15 +434,13 @@ if __name__ == '__main__':
             s[0] = int(s[0])
             cali_tag_no.append(s[0])
             cali_tag.append([])
-
+    f.close()
+    
     # run main code
-    global end_flag, main_code
     global data_receive_flag
     data_receive_flag = 0
+    global end_flag
     end_flag = 0
-    main_code = 0
-    main_code = MainThread(0.1)
-    main_code.start()
 
     # start collect data
     rospy.Subscriber("Camera_Data", Camera_Data, callback)
@@ -523,10 +452,10 @@ if __name__ == '__main__':
     correction_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/robot_corr_0904_1.txt"
     correction_matrix_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/scripts/Correction_Matrix.txt"
     correction_file_ = open(correction_file,"w")
-    correction_file_.close()
     path_file_ = open(path_file,"w")
-    path_file_.close()
     sense_file_ = open(sense_file,"w")
+    correction_file_.close()
+    path_file_.close()
     sense_file_.close()
 
     # run and wait for calibration first for localization
