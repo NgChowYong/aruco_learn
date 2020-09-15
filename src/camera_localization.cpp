@@ -20,6 +20,8 @@ tf::Transform                           cam2pos;//  from origin to camera
 // initial tag variable
 int origin = 1;
 int robot  = 2;
+int starting_flag = 0;
+int g_Origin_Counter = 0;
 
 // average map to base data
 double xyz[3*3] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
@@ -28,7 +30,9 @@ double xyzw[4*3] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
 void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
   //ROS_INFO("I hear marker");
   aruco_ = *msg;
+  starting_flag = 1;
 
+  // clear pass data
   camdata.Obstacle_Pose.poses.erase(camdata.Obstacle_Pose.poses.begin(), camdata.Obstacle_Pose.poses.end());
   camdata.Obstacle_ID.erase(camdata.Obstacle_ID.begin(), camdata.Obstacle_ID.end());
   camdata.Robot_Pose.poses.erase(camdata.Robot_Pose.poses.begin(), camdata.Robot_Pose.poses.end());
@@ -46,6 +50,8 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
   for(int i = 0;i < aruco_.transforms.size();i++){
     if(aruco_.transforms[i].fiducial_id == origin){
       ROS_INFO("found origin !");
+      if (g_Origin_Counter < 500){
+        g_Origin_Counter += 1;
 
       // simple moving average
       for(int j = 3; j > 1; j--){
@@ -95,6 +101,7 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
       camdata.Camera_Pose.orientation.y = cam2pos.getRotation().y();
       camdata.Camera_Pose.orientation.z = cam2pos.getRotation().z();
       camdata.Camera_Pose.orientation.w = cam2pos.getRotation().w();
+      }
 
     }else{
         // do update of camera
@@ -182,6 +189,7 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
   pub.publish(camdata);
 }
 
+
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "cam_localization");
@@ -205,6 +213,9 @@ int main(int argc, char **argv)
   pub = n.advertise<localization::Camera_Data>("Camera_Data", 10);
   ros::Subscriber                         sub;
   sub = n.subscribe("fiducial_transforms", 2, MarkerCallback);
+
+  while(starting_flag == 0){
+  }
 
   // find transformation from camera lens to base
   tf::TransformListener Listener;
