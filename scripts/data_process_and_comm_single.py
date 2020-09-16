@@ -10,6 +10,7 @@ import numpy as np
 
 # ros package
 from localization.msg import Camera_Data
+from visualization_msgs.msg import Marker
 import tf
 from localization.srv import *
 
@@ -175,6 +176,7 @@ def wifi_communication():
     global end_flag, main_code
     global path_file, sense_file
     global robot_connection
+    global ros_pub
     print('start wifi')
     count = 0
 
@@ -203,6 +205,7 @@ def wifi_communication():
             if data.find('DK2') == 0:
                 print('receive from DK2')
                 print(data)
+                # ros pub
                 f = open(path_file,"a")
                 f.write(data)
                 f.write("\n")
@@ -444,6 +447,22 @@ if __name__ == '__main__':
 
     # start collect data
     rospy.Subscriber("Camera_Data", Camera_Data, callback)
+    global ros_pub
+    ros_pub = rospy.Publisher('Visual_Data', Marker, queue_size=1)
+    # ros_pub.publish(hello_str)
+    pub_data = Marker()
+    pub_data.id = 0
+    pub_data.type = 0
+    pub_data.action = 0
+    pub_data.pose.position.x = 1
+    pub_data.pose.position.y = 1
+    pub_data.pose.position.z = 1
+    pub_data.pose.orientation.w = 1
+    pub_data.color.r = 1
+    pub_data.lifetime = 0
+    pub_data.header.frame_id = '/baselink'
+    pub_data.header.stamp = rospy.get_rostime()
+    ros_pub.publish(pub_data)
 
     # file to save path data
     global path_file, sense_file, correction_file, correction_matrix_file
