@@ -52,6 +52,7 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
       ROS_INFO("found origin !");
       if (g_Origin_Counter < 500){
         g_Origin_Counter += 1;
+        std::cout << "count: "<< g_Origin_Counter <<"\n";
 
       // simple moving average
       for(int j = 3; j > 1; j--){
@@ -89,6 +90,7 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
       // it become map to base link
       cam2pos = cam2pos.inverse(); // become from origin to camera
       //map2base = cam2pos * cam2base;
+      //}
       map2base.setData(cam2pos * cam2base);
       // publish at main while loop
 
@@ -126,7 +128,7 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
         tf::Quaternion tempq =  tempa * cam2pos.getRotation();
 
         tf::Quaternion delta_q = tempq.inverse() * cam2pos.getRotation();
-        doubel angle_diff_tag_and_origin = 2*acos(delta_q.w());
+        double angle_diff_tag_and_origin = 2*acos(delta_q.w());
 
         // big angle change need to skip this data
         if(angle_diff_tag_and_origin > 1.8){
@@ -204,10 +206,11 @@ int main(int argc, char **argv)
 
 
   pub = n.advertise<localization::Camera_Data>("Camera_Data", 10);
-  ros::Subscriber                         sub;
+  ros::Subscriber sub;
   sub = n.subscribe("fiducial_transforms", 2, MarkerCallback);
 
   while(starting_flag == 0){
+      ros::spinOnce();
   }
 
   // find transformation from camera lens to base
