@@ -120,9 +120,8 @@ def Data_Correction(data):
 # callback function for rospy to used
 def callback(data):
     global data_receive, data_receive_flag
-    
-    # data process
 
+    # data process
     global cali_tag
     global cali_tag_no
     global cali_flag
@@ -460,7 +459,7 @@ if __name__ == '__main__':
     pub_data.pose.orientation.w = 1
     pub_data.color.r = 1
     pub_data.lifetime = 0
-    pub_data.header.frame_id = '/baselink'
+    pub_data.header.frame_id = '/map'
     pub_data.header.stamp = rospy.get_rostime()
     ros_pub.publish(pub_data)
 

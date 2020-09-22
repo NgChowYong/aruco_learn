@@ -49,8 +49,8 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
   */
   for(int i = 0;i < aruco_.transforms.size();i++){
     if(aruco_.transforms[i].fiducial_id == origin){
-      ROS_INFO("found origin !");
-      if (g_Origin_Counter < 500){
+      //ROS_INFO("found origin !");
+      if (g_Origin_Counter < 250){
         g_Origin_Counter += 1;
         std::cout << "count: "<< g_Origin_Counter <<"\n";
 
@@ -125,13 +125,31 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
         // q' = q2 * q1 => for q1 followed by q2 rotation
         // tempq is relative rotation from origin to tag
         tf::Quaternion tempa =  tf::Quaternion(aruco_.transforms[i].transform.rotation.x,aruco_.transforms[i].transform.rotation.y,aruco_.transforms[i].transform.rotation.z,aruco_.transforms[i].transform.rotation.w); 
+        tf::Quaternion cam2posinv = cam2pos.getRotation();
+        // temp a and cam 2 pos inv is the same so
         tf::Quaternion tempq =  tempa * cam2pos.getRotation();
 
-        tf::Quaternion delta_q = tempq.inverse() * cam2pos.getRotation();
-        double angle_diff_tag_and_origin = 2*acos(delta_q.w());
+        //tf::Quaternion delta_q = tempq.inverse() * cam2pos.getRotation();
+        //tf::Quaternion delta_q = tempq;
+        //double angle_diff_tag_and_origin = 2*acos(delta_q.w());
+        double angle_diff_tag_and_origin = 2*acos(tempq.w());
+        while(angle_diff_tag_and_origin > 3.1415){
+            angle_diff_tag_and_origin -= 6.28319;
+        }
+        while(angle_diff_tag_and_origin < -3.1415){
+            angle_diff_tag_and_origin += 6.28319;
+        }
+        //std::cout << "tempa " << tempa<<"\n";
+        //std::cout << "tempq " << tempa<<"\n";
+        std::cout << "c2p " << cam2posinv.w()<<" "<< cam2posinv.x()<<" "<< cam2posinv.y()<<" "<< cam2posinv.z()<<"\n";
+        //std::cout << "dq " << delta_q.w()<<" "<<delta_q.x()<<" "<<delta_q.y()<<" "<<delta_q.z()<<"\n";
+        std::cout << "dq " << tempa.w()<<" "<< tempa.x()<<" "<<tempa.y()<<" "<< tempa.z()<<"\n";
+        std::cout << "dq " << tempq.w()<<" "<< tempq.x()<<" "<<tempq.y()<<" "<< tempq.z()<<"\n";
+        std::cout << "angle_diff " << angle_diff_tag_and_origin<<"\n";
 
         // big angle change need to skip this data
-        if(angle_diff_tag_and_origin > 1.8){
+        if(angle_diff_tag_and_origin > 1.6 || angle_diff_tag_and_origin < -1.6){
+          std::cout << "got 90 deg error\n";
           continue;
         }
 
@@ -152,7 +170,7 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
 
         // conjugate
         tf::Quaternion tempq_conjugate = tempq;
-        
+
         // rotation from tag to origin
         tempq = tempq.inverse();
 
@@ -163,9 +181,9 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
         //}
 
         tf::Quaternion vect = tf::Quaternion(1,0,0,0);
-        // do rotation from x to origin 
+        // do rotation from x to origin
         vect = tempq * vect * tempq_conjugate;
-                
+
         temp.orientation.x = vect.x();
         temp.orientation.y = vect.y();
         temp.orientation.z = vect.z();
