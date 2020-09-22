@@ -129,9 +129,6 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
         // temp a and cam 2 pos inv is the same so
         tf::Quaternion tempq =  tempa * cam2pos.getRotation();
 
-        //tf::Quaternion delta_q = tempq.inverse() * cam2pos.getRotation();
-        //tf::Quaternion delta_q = tempq;
-        //double angle_diff_tag_and_origin = 2*acos(delta_q.w());
         double angle_diff_tag_and_origin = 2*acos(tempq.w());
         while(angle_diff_tag_and_origin > 3.1415){
             angle_diff_tag_and_origin -= 6.28319;
@@ -139,13 +136,10 @@ void MarkerCallback(const fiducial_msgs::FiducialTransformArray::ConstPtr& msg){
         while(angle_diff_tag_and_origin < -3.1415){
             angle_diff_tag_and_origin += 6.28319;
         }
-        //std::cout << "tempa " << tempa<<"\n";
-        //std::cout << "tempq " << tempa<<"\n";
-        std::cout << "c2p " << cam2posinv.w()<<" "<< cam2posinv.x()<<" "<< cam2posinv.y()<<" "<< cam2posinv.z()<<"\n";
-        //std::cout << "dq " << delta_q.w()<<" "<<delta_q.x()<<" "<<delta_q.y()<<" "<<delta_q.z()<<"\n";
-        std::cout << "dq " << tempa.w()<<" "<< tempa.x()<<" "<<tempa.y()<<" "<< tempa.z()<<"\n";
-        std::cout << "dq " << tempq.w()<<" "<< tempq.x()<<" "<<tempq.y()<<" "<< tempq.z()<<"\n";
-        std::cout << "angle_diff " << angle_diff_tag_and_origin<<"\n";
+        //std::cout << "c2p " << cam2posinv.w()<<" "<< cam2posinv.x()<<" "<< cam2posinv.y()<<" "<< cam2posinv.z()<<"\n";
+        //std::cout << "dq " << tempa.w()<<" "<< tempa.x()<<" "<<tempa.y()<<" "<< tempa.z()<<"\n";
+        //std::cout << "dq " << tempq.w()<<" "<< tempq.x()<<" "<<tempq.y()<<" "<< tempq.z()<<"\n";
+        //std::cout << "angle_diff " << angle_diff_tag_and_origin<<"\n";
 
         // big angle change need to skip this data
         if(angle_diff_tag_and_origin > 1.6 || angle_diff_tag_and_origin < -1.6){

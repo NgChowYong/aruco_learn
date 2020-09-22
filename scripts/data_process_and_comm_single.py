@@ -411,7 +411,7 @@ def plane_calibration():
         print('done correction calculation')
 
 if __name__ == '__main__':
-    
+
     rospy.init_node('SendDataToSTM', anonymous=True)
 
     global coordinate_file
@@ -437,7 +437,7 @@ if __name__ == '__main__':
             cali_tag_no.append(s[0])
             cali_tag.append([])
     f.close()
-    
+
     # run main code
     global data_receive_flag
     data_receive_flag = 0
