@@ -28,6 +28,7 @@ def callback(data):
 
     # data process
     global cali_tag
+    global cali_tag2
     global cali_tag_no
     global cali_flag
     global do_cali
@@ -37,9 +38,13 @@ def callback(data):
         if do_cali == 1:
             # do data collection
             for i in range(len(data.Obstacle_Pose.poses)):
+                flag = 0
                 for j in range(len(cali_tag_no)):
                     if data.Obstacle_ID[i] == cali_tag_no[j]:
                         cali_tag[j].append(data.Obstacle_Pose.poses[i].position)
+                        flag = 1
+                if flag == 0:
+                    cali_tag2.append(data.Obstacle_Pose.poses[i].position)
     else:
         pass
 
@@ -89,6 +94,14 @@ def plane_calibration():
                        str(cali_tag[i][j].y) + "," + \
                        str(cali_tag[i][j].z) + "\n"
                 f.write(str_)
+        f.close()
+
+        f = open(plane_measure_file2,'w')
+        for i in cali_tag2:
+            str_ = str(i.x) + "," + \
+                   str(i.y) + "," + \
+                   str(i.z) + "\n"
+            f.write(str_)
         f.close()
 
         print('start calculating ')
@@ -142,6 +155,8 @@ def plane_calibration():
         except rospy.ServiceException as e:
             print("Service call failed: %s"%e)
             resp = np.zeros([12,1])
+            print("error in correction service")
+            return
 
         # resize to 3x4 matrix
         Matrix = np.zeros([3, 4])
@@ -183,8 +198,10 @@ def plane_calibration():
         f = open(plane_file,"w")
         for i in temp_data_1:
             str_ = str(i[0]) + "," + str(i[1]) + "," + str(i[2]) +"\n"
+            f.write(str_)
         for i in temp_data_2:
             str_ = str(i[0]) + "," + str(i[1]) + "," + str(i[2]) +"\n"
+            f.write(str_)
         f.close()
 
         # display error
@@ -235,6 +252,7 @@ if __name__ == '__main__':
     global coordinate_file
     global do_cali
     global cali_tag
+    global cali_tag2
     global cali_tag_no
     global cali_flag
     global robot_connection
@@ -247,6 +265,7 @@ if __name__ == '__main__':
     cali_flag = 0
     cali_tag_no = []
     cali_tag = []
+    cali_tag2 = []
 
     for i in f:
         s = i.split(',')
@@ -267,8 +286,10 @@ if __name__ == '__main__':
 
     # file to save path data
     global plane_file, plane_measure_file, correction_file, correction_matrix_file
+    global plane_measure_file2
     plane_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/plane_.txt"
     plane_measure_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/plane_measure.txt"
+    plane_measure_file2 = "/home/icmems/WALLE_project/catkin_ws/src/localization/plane_measure2.txt"
     correction_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/robot_corr_0904_1.txt"
     correction_matrix_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/scripts/Correction_Matrix.txt"
     correction_file_ = open(correction_file,"w")
