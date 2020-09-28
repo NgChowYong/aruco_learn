@@ -21,6 +21,7 @@ add_message_files(
   FILES
   Camera_Data.msg
   Camera_Data_error.msg
+  Status_Data.msg
 )
 
 add_service_files(
