@@ -93,14 +93,18 @@ class MainFunction():
         self.robot_status = 0
         self.robot_state = [0,0,0] # initial state
         self.reaching_distance = 30 # in mm
-        self.init_start = 1
-        
-    def recorded_path(repeat_no):
+        self.reaching = 0
+	self.starting = 1
+
+    def recorded_path(self,repeat_no):
         global pub
         rate = rospy.Rate(1) # 1hz
-        while not rospy.is_shutdown():
-            if check_reaching_last_target == True or self.init_start == 1:
-                self.init_start = 0
+        rate.sleep()
+        count = 0
+        print("start generate path")
+        while not rospy.is_shutdown() and count < repeat_no:
+            if self.check_reaching_last_target(self.constant_path) == True or self.starting == 1:
+                self.starting = 0
                 pub_data = PoseArray()
                 for i in self.constant_path:
                     pose = Pose()
@@ -108,29 +112,41 @@ class MainFunction():
                     pose.position.y = i[1]
                     pose.orientation.w = i[2]
                     pub_data.poses.append(pose)
-                pub.publish(pud_data)
+                pub.publish(pub_data)
+                count = count + 1
+                print("generate no: "+str(count))
             rate.sleep()
+        print("generate path end")
 
-    def check_reaching_last_target(path):
+    def check_reaching_last_target(self,path):
         dx = path[-1][0] - self.robot_state[0]
         dy = path[-1][1] - self.robot_state[1]
         if math.sqrt(dx*dx +dy*dy) > self.reaching_distance:
+            self.reaching = 0
+            #print("large dist")
             return False
         else:
-            return True
-        
-            
-    def update_robot_status(data):
+            if self.reaching == 0:
+                self.reaching = 1
+                #print("short dist")
+                return True
+            else:
+                #print("not leaving yet")
+                return False
+
+
+    def update_robot_status(self,data):
         self.robot_status = data.Robot_Status
         self.robot_state = [data.Robot_State.position.x, \
                             data.Robot_State.position.y, \
                             data.Robot_State.orientation.w]
-        
-    
+        #print("update pose")
+
+
 def callback(data):
     global main_code
     main_code.update_robot_status(data)
-    
+
 if __name__ == '__main__':
     rospy.init_node('PathGeneration', anonymous=True)
 
@@ -138,8 +154,8 @@ if __name__ == '__main__':
     main_code = MainFunction()
 
     global pub
-    pub = rospy.Publisher('Target_Path', PoseArray, queue_size=1)
+    pub = rospy.Publisher('Target_Path', PoseArray, queue_size=0)
     rospy.Subscriber("Robot_Status", Status_Data, callback)
-    
+
     main_code.recorded_path(5)
-    
+

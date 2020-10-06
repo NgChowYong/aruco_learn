@@ -203,7 +203,7 @@ def plane_calibration():
         f.close()
 
         cali_flag = 2
-        print('done correction calculation')
+        print('skip correction calculation')
 
 if __name__ == '__main__':
     rospy.init_node('DataProcess', anonymous=True)
@@ -231,13 +231,7 @@ if __name__ == '__main__':
             cali_tag.append([])
 
     # run main code
-    global end_flag, main_code
-    global data_receive_flag
-    data_receive_flag = 0
-    end_flag = 0
-    main_code = 0
-    main_code = MainThread(0.1)
-    main_code.start()
+    global end_flag
 
     # start collect data
     rospy.Subscriber("Camera_Data", Camera_Data, callback)

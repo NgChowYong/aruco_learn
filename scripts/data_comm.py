@@ -24,52 +24,51 @@ PORT = 11223  # Port to listen on (non-privileged ports are > 1023)
 class Comm_Data:
     # data passing to comm
     path = PoseArray()
-    path_update_flag = 0 
+    path_update_flag = 0
     camdata = Camera_Data()
     camdata_update_flag = 0
-    # data output 
+    # data output
     data_in_str = "PC,E"
 
-    def camdata_store(data):
-        camdata = data
-        camdata_update_flag = 1
-        #TODO: do update of status to rviz
+    def camdata_store(self,data):
+        self.camdata = data
+        self.camdata_update_flag = 1
 
-    def pathdata_store(data):
-        path = data
-        path_update_flag = 1
+    def pathdata_store(self,data):
+        self.path = data
+        self.path_update_flag = 1
 
-    def check_update():
-        if camdata_update_flag == 1 or path_update_flag == 1:
+    def check_update(self):
+        if self.camdata_update_flag == 1 or self.path_update_flag == 1:
             return True
         else:
             return False
 
-    def return_data_string():
-        return data_in_str
-    
-    def data_combine():
+    def return_data_string(self):
+        return self.data_in_str
+
+    def data_combine(self):
         # initial word sending
         ret = "PC,"
-        
+
         # update when new data capture
-        if camdata_update_flag == 1:
+        if self.camdata_update_flag == 1:
             # robot
-            ret = Robot_Data_Process(data.Robot_Pose, data.Camera_Pose, ret)
+            ret = self.Robot_Data_Process(self.camdata.Robot_Pose, self.camdata.Camera_Pose, ret)
             # camera pose
-            ret = Cam_Data_Process(data.Camera_Pose, ret)
+            ret = self.Cam_Data_Process(self.camdata.Camera_Pose, ret)
             camdata_update_flag = 0
-        if path_update_flag == 1:
+        if self.path_update_flag == 1:
             # path
-            ret = Path_Data_Process(path.poses, ret)
-            
+            ret = self.Path_Data_Process(self.path.poses, ret)
+
         # output
         ret = ret + "E"
-        data_in_str = ret
+        self.data_in_str = ret
 
-        
+
     # TODO: need to calculate distance and angle in 2D
-    def Robot_Data_Process(data, Camera_Pose, ret):
+    def Robot_Data_Process(self,data, Camera_Pose, ret):
         # calculate length and angle of robot
         # x,y, theta
         x = 0
@@ -99,10 +98,10 @@ class Comm_Data:
         distance = math.sqrt(x*x + y*y + z*z) + math.sqrt(camx*camx + camy*camy + camz*camz) 
         return (ret + "R," + str(int(x*1000)) + "," + str(int(y*1000)) + "," + str(int(theta*1000)) + "," + str(int(distance*1000)) + ",")
 
-    def Cam_Data_Process(data, ret):
+    def Cam_Data_Process(self,data, ret):
         return ret + "C," + str(int(data.position.x*1000)) + "," + str(int(data.position.y*1000)) + ","
 
-    def Path_Data_Process(data, ret):
+    def Path_Data_Process(self,data, ret):
         str_ = ""
         for i in range(len(data)-1):
             str_ = str_ + str(data[i].position.x)
@@ -116,10 +115,10 @@ class Comm_Data:
         str_ = str_ + ","
         str_ = str_ + str(data[i].orientation.w)
         return ret + "P," + str_ + ","
-    
-    def receive_DK2(data):
+
+    def receive_DK2(self,data):
         if data == 2 or data == 3:
-            path_update_flag = 0
+            self.path_update_flag = 0
 
 # callback function for rospy to used
 def callback_camdata(data):
@@ -165,18 +164,18 @@ def wifi_communication():
                 print('receive from DK2')
                 print(data)
                 str_ = data.split(',')
+                if str_[1] != 'E':
+                    # save data to comm
+                    comm_data.receive_DK2(int(str_[1]))
 
-                # save data to comm
-                comm_data.receive_DK2(int(str_[1]))
+                    # publish data
+                    robot_status = Status_Data()
+                    robot_status.Robot_Status = int(str_[2])
+                    robot_status.Robot_State.position.x = float(str_[3])
+                    robot_status.Robot_State.position.y = float(str_[4])
+                    robot_status.Robot_State.orientation.w = float(str_[5])
+                    pub.publish(robot_status)
 
-                # publish data
-                robot_status = Status_Data()
-                robot_status.Robot_Status = int(str_[2])
-                robot_status.Robot_State.position.x = float(str_[3])
-                robot_status.Robot_State.position.y = float(str_[4])
-                robot_status.Robot_State.orientation.w = float(str_[5])
-                pub.publish(robot_status)
-                
             if comm_data.check_update() == True:
                 comm_data.data_combine()
                 data_receive = comm_data.return_data_string()
