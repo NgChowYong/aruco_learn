@@ -33,6 +33,7 @@ class Comm_Data:
     def camdata_store(data):
         camdata = data
         camdata_update_flag = 1
+        #TODO: do update of status to rviz
 
     def pathdata_store(data):
         path = data
