@@ -130,7 +130,7 @@ def plane_calibration():
         req.Size = 4
         Actual = []
         global coordinate_file
-        f = open(coordinate_file)
+        f = open(coordinate_file,'r')
         for i in f:
             if i[-1] == '\n':
                 i = i[:-1]
@@ -145,6 +145,7 @@ def plane_calibration():
         req.Actual = Actual
         f.close()
         print('get actual data from file done, start call service')
+	print('ACTUAL data:',Actual)
 
         # do calibration service to get calibration matrix
         rospy.wait_for_service('correction_service')

@@ -1,0 +1,7 @@
+<launch>
+
+<node pkg="localization" type="cam_localization" name="cam_localization" output="screen"/>
+<node pkg="localization" type="data_comm.py" name="data_comm" output="screen"/>
+<node pkg="localization" type="data_process.py" name="data_process" output="screen"/>
+
+</launch>

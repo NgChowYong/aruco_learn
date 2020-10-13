@@ -18,7 +18,8 @@ import tf
 import cv2
 
 # HOST = '192.168.43.77'  # Standard loopback interface address (localhost)
-HOST = '192.168.0.199'  # Standard loopback interface address (localhost)
+# HOST = '192.168.0.199'  # Standard loopback interface address (localhost)
+HOST = '10.42.0.1'  # Standard loopback interface address (localhost)
 PORT = 11223  # Port to listen on (non-privileged ports are > 1023)
 
 class Comm_Data:
@@ -80,7 +81,7 @@ class Comm_Data:
             # TODO : Reserved for many same tag detected
             pass
 
-        elif l == 1:
+        elif l >= 1:
             x = data.poses[0].position.x
             y = data.poses[0].position.y
             z = data.poses[0].position.z
@@ -89,7 +90,7 @@ class Comm_Data:
             theta = math.atan2(data.poses[0].orientation.y, data.poses[0].orientation.x)
 
         else:
-            return [ret, None]
+            return ret
 
         theta = math.atan2(data.poses[0].orientation.y, data.poses[0].orientation.x)
         camx = Camera_Pose.position.x
@@ -99,6 +100,7 @@ class Comm_Data:
         return (ret + "R," + str(int(x*1000)) + "," + str(int(y*1000)) + "," + str(int(theta*1000)) + "," + str(int(distance*1000)) + ",")
 
     def Cam_Data_Process(self,data, ret):
+        print(ret)
         return ret + "C," + str(int(data.position.x*1000)) + "," + str(int(data.position.y*1000)) + ","
 
     def Path_Data_Process(self,data, ret):
@@ -170,7 +172,7 @@ def wifi_communication():
 
                     # publish data
                     robot_status = Status_Data()
-                    robot_status.Robot_Status = int(str_[2])
+                    robot_status.Robot_Status = int(float(str_[2]))
                     robot_status.Robot_State.position.x = float(str_[3])
                     robot_status.Robot_State.position.y = float(str_[4])
                     robot_status.Robot_State.orientation.w = float(str_[5])
