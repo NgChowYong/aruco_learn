@@ -55,6 +55,7 @@ def Data_Correction(data):
         correction_file_.write(str(result[1][0])+",")
         correction_file_.write(str(result[2][0])+"\n")
 
+    
     correction_file_.close()
 
     return data
@@ -242,7 +243,7 @@ if __name__ == '__main__':
     global path_file, sense_file, correction_file, correction_matrix_file
     path_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/robot_path.txt"
     sense_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/robot_sense.txt"
-    correction_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/robot_corr_0904_1.txt"
+    correction_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/robot_data_after_correction_1014.txt"
     correction_matrix_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/scripts/Correction_Matrix.txt"
     correction_file_ = open(correction_file,"w")
     correction_file_.close()

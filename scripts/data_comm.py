@@ -139,6 +139,8 @@ def wifi_communication():
     global comm_data
     global pub
     global end_flag
+    global data_get_file
+    
     print('start wifi')
     try:
         # for python 2.7 used !!
@@ -176,7 +178,14 @@ def wifi_communication():
                     robot_status.Robot_State.position.x = float(str_[3])
                     robot_status.Robot_State.position.y = float(str_[4])
                     robot_status.Robot_State.orientation.w = float(str_[5])
+                    robot_status.Robot_State_Odom.position.x = float(str_[6])
+                    robot_status.Robot_State_Odom.position.y = float(str_[7])
+                    robot_status.Robot_State_Odom.orientation.w = float(str_[8])
                     pub.publish(robot_status)
+
+                    data_get_file_ = open(data_get_file,"a")
+                    data_get_file_.write(data)
+                    data_get_file_.close()
 
             if comm_data.check_update() == True:
                 comm_data.data_combine()
@@ -216,6 +225,10 @@ if __name__ == '__main__':
     global comm_data
     comm_data = Comm_Data()
 
+    global data_get_file
+    data_get_file = "/home/icmems/WALLE_project/catkin_ws/src/localization/robot_path.txt"
+    data_get_file_ = open(data_get_file,"w")
+    data_get_file_.close()
     # start collect data
     rospy.Subscriber("Camera_Data_Calibrated", Camera_Data, callback_camdata)
     rospy.Subscriber("Target_Path", PoseArray, callback_path)

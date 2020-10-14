@@ -89,7 +89,7 @@ import cv2
 class MainFunction():
     def __init__(self):
         # self.smth = 0
-        self.constant_path = [[400,300,0],[400,1000,0],[-400,1000,0],[-400,300,0]] # in mm
+        self.constant_path = [[500,300,0],[500,1000,0],[-500,1000,0],[-500,300,0]] # in mm
         self.robot_status = 0
         self.robot_state = [0,0,0] # initial state
         self.reaching_distance = 30 # in mm
@@ -115,6 +115,8 @@ class MainFunction():
                 pub.publish(pub_data)
                 count = count + 1
                 print("generate no: "+str(count))
+                print("end generate route")
+                break;
             rate.sleep()
         print("generate path end")
 
