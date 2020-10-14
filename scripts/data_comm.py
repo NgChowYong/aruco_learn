@@ -173,16 +173,18 @@ def wifi_communication():
                     comm_data.receive_DK2(int(str_[1]))
 
                     # publish data
-                    robot_status = Status_Data()
-                    robot_status.Robot_Status = int(float(str_[2]))
-                    robot_status.Robot_State.position.x = float(str_[3])
-                    robot_status.Robot_State.position.y = float(str_[4])
-                    robot_status.Robot_State.orientation.w = float(str_[5])
-                    robot_status.Robot_State_Odom.position.x = float(str_[6])
-                    robot_status.Robot_State_Odom.position.y = float(str_[7])
-                    robot_status.Robot_State_Odom.orientation.w = float(str_[8])
-                    pub.publish(robot_status)
-
+                    try:
+                        robot_status = Status_Data()
+                        robot_status.Robot_Status = int(float(str_[2]))
+                        robot_status.Robot_State.position.x = float(str_[3])
+                        robot_status.Robot_State.position.y = float(str_[4])
+                        robot_status.Robot_State.orientation.w = float(str_[5])
+                        robot_status.Robot_State_Odom.position.x = float(str_[6])
+                        robot_status.Robot_State_Odom.position.y = float(str_[7])
+                        robot_status.Robot_State_Odom.orientation.w = float(str_[8])
+                        pub.publish(robot_status)
+                    except:
+                        pass
                     data_get_file_ = open(data_get_file,"a")
                     data_get_file_.write(data)
                     data_get_file_.close()
